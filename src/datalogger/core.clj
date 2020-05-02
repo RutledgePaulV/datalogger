@@ -27,16 +27,15 @@
 (defn ensure-serializable [x]
   x)
 
-(defn output [data]
-  (let [clean (into (sorted-map) (-> data ensure-serializable mask-sensitive-data))]
-    (jsonista/write-value *out* clean mapper)))
-
-
 (defn log-level-enabled? [logger level]
   )
 
-(defn dispatch-log [level msg arguments]
-  )
+(defn serialize [m]
+  (let [clean (into (sorted-map) (-> m ensure-serializable mask-sensitive-data))]
+    (jsonista/write-value *out* clean mapper)))
+
+(defn write! [m]
+  (send-off thread (fn [_] (println (serialize m)))))
 
 (deftype DataLogger [logger-name] :load-ns true
   Logger
@@ -50,23 +49,30 @@
     (log-level-enabled? this :warn))
   (isErrorEnabled [this]
     (log-level-enabled? this :error))
+  (^void trace [this ^String message]
+    (write! {:logger logger-name :level :trace :message message}))
+  (^void debug [this ^String message]
+    (write! {:logger logger-name :level :debug :message message}))
+  (^void info [this ^String message]
+    (write! {:logger logger-name :level :info :message message}))
   (^void warn [this ^String message]
-    (send thread #(println message))))
+    (write! {:logger logger-name :level :warn :message message}))
+  (^void error [this ^String message]
+    (write! {:logger logger-name :level :error :message message})))
 
 (deftype DataLoggerFactory [^Atom loggers] :load-ns true
   ILoggerFactory
   (getLogger [this name]
-    (get (swap! loggers update name #(or % (DataLogger. name))) name)))
+    (letfn [(swapper [old]
+              (if (and old (= (hash (class old)) (hash DataLogger)))
+                old
+                (DataLogger. name)))]
+      (get (swap! loggers update name swapper) name))))
 
-(def logger-factory (delay (DataLoggerFactory. (atom {}))))
-(def marker-factory (delay (BasicMarkerFactory.)))
-(def mdc-adapter (delay (BasicMDCAdapter.)))
+(defonce logger-factory (delay (DataLoggerFactory. (atom {}))))
+(defonce marker-factory (delay (BasicMarkerFactory.)))
+(defonce mdc-adapter (delay (BasicMDCAdapter.)))
 
-
-
-(defn demo [msg]
-  (let [logger (LoggerFactory/getLogger "demo")]
-    (.warn logger "demo")))
 
 (defmacro log [level data]
   (let [line (-> &form meta :line)]
