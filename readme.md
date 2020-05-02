@@ -22,7 +22,7 @@ I offer a new logging library for Clojure applications. It is opinionated and re
 - It will not support runtime configuration and instead use an edn config file on the classpath. 
 - It will not support pluggable appenders and will only ever write to standard out and standard error.
 - It will provide excellent test facilities for asserting log statements made in your code.
-- It will offer good performance. 
+- It will offer good, though perhaps not great, performance. 
 - It will bypass any and all java logging libraries when you log from Clojure. 
 - It will include any available MDC data in the logs. 
 - It will provide stack-based logging contexts for Clojure that support rich data (not only key/value strings like MDC).
