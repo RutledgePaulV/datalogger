@@ -1,17 +1,14 @@
 (ns datalogger.protos
-  (:import (clojure.lang MapEntry Keyword)
+  (:import (clojure.lang MapEntry Keyword Delay Atom ISeq)
            (java.util Map Set List)
-           (java.time Instant)))
+           (java.time Instant)
+           (java.util.function Supplier)))
 
 
 (defn stringify-key [k]
-  (cond
-    (qualified-keyword? k)
+  (if (qualified-keyword? k)
     (str (namespace k) "/" (name k))
-    (keyword? k)
-    (name k)
-    :otherwise
-    (str k)))
+    (name k)))
 
 (defn get-mask-for-key [k options]
   )
@@ -23,12 +20,10 @@
   )
 
 (defprotocol LoggableData
+  :extend-via-metadata true
   (as-data [x options]))
 
 (extend-protocol LoggableData
-  Object
-  (as-data [x options]
-    (.getName (class x)))
   Thread
   (as-data [x options]
     (.getName x))
@@ -45,6 +40,15 @@
   (as-data [x options] x)
   Boolean
   (as-data [x options] x)
+  Atom
+  (as-data [x options]
+    (as-data (deref x) options))
+  Delay
+  (as-data [x options]
+    (as-data (force x) options))
+  Supplier
+  (as-data [x options]
+    (as-data (.get x) options))
   nil
   (as-data [x options] x)
   MapEntry
@@ -62,6 +66,9 @@
   Set
   (as-data [x options]
     (into (sorted-set) (map #(as-data % options) x)))
+  ISeq
+  (as-data [x options]
+    (mapv #(as-data % options) x))
   List
   (as-data [x options]
     (mapv #(as-data % options) x)))

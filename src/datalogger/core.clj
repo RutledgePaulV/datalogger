@@ -10,8 +10,7 @@
            (java.time Instant)
            (java.net InetAddress)
            (clojure.lang PersistentHashMap)
-           (java.util Map)
-           (org.slf4j.bridge SLF4JBridgeHandler)))
+           (java.util Map)))
 
 (def DEFAULTS
   {:levels {"*" :warn}
@@ -28,7 +27,7 @@
 (defn set-configuration! [config]
   (reset! CONFIG (normalize-config config)))
 
-(defn load-configuration! [resource-name]
+(defn load-configuration-file! [resource-name]
   (when-some [resource (io/resource resource-name)]
     (set-configuration! (edn/read-string (slurp resource)))))
 
@@ -54,9 +53,17 @@
 
 (def hostname (delay (.getHostName (InetAddress/getLocalHost))))
 
-(do
-  (SLF4JBridgeHandler/removeHandlersForRootLogger)
-  (SLF4JBridgeHandler/install))
+(defn serializable? [x]
+  (try
+    (jsonista/write-value-as-string x (:mapper @CONFIG))
+    true
+    (catch Exception e false)))
+
+(extend-protocol protos/LoggableData
+  Object
+  (as-data [x options]
+    (if (serializable? x)
+      x (.getName (class x)))))
 
 (defn additional-context []
   {"@timestamp" (Instant/now)
