@@ -1,13 +1,13 @@
 (ns datalogger.core-test
   (:require [clojure.test :refer :all]
-            [datalogger.core :refer :all]))
-
-(deftest logger->hierarchy-test
-  (is (= ["*"] (logger->hierarchy "*")))
-  (is (= ["core" "*"] (logger->hierarchy "core")))
-  (is (= ["core.*" "*"] (logger->hierarchy "core.*")))
-  (is (= ["a.b.c" "a.b.*" "a.*" "*"] (logger->hierarchy "a.b.c"))))
+            [datalogger.core :refer :all])
+  (:import (org.slf4j LoggerFactory)))
 
 
-(deftest logging-filter-test
-  )
+
+(deftest java-logging
+  (let [logger (LoggerFactory/getLogger "myLogger")
+        [logs] (capture (.error logger "Demonstration"))]
+    (is (not-empty logs))
+    (is (= "ERROR" (get-in logs [0 :level])))
+    (is (= "Demonstration" (get-in logs [0 :message])))))
