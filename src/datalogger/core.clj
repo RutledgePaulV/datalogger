@@ -6,8 +6,9 @@
             [datalogger.utils :as utils])
   (:import (org.slf4j ILoggerFactory)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
-           (com.fasterxml.jackson.databind MapperFeature)))
-
+           (com.fasterxml.jackson.databind MapperFeature)
+           (java.time Instant)
+           (java.net InetAddress)))
 
 (def DEFAULTS
   {:levels {"*" :warn}})
@@ -54,6 +55,14 @@
 (defn include-context [m]
   (utils/deep-merge *context* m))
 
+(def hostname
+  (delay (.getHostName (InetAddress/getLocalHost))))
+
+(defn additional-context []
+  {"@timestamp" (str (Instant/now))
+   :hostname    (force hostname)
+   :thread      (.getName (Thread/currentThread))})
+
 (defn write! [m]
   (let [clean (-> m
                   include-mdc
@@ -84,13 +93,14 @@
       (log-level-enabled? logger-name :error))
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
-      (send-off logging-agent
-                (fn [_]
-                  (let [formatted-msg   (apply format message (utils/realize arguments))
-                        base-data       {:throwable throwable :message formatted-msg :marker marker :level level}
-                        logger-callsite (utils/callsite-info)
-                        data            (merge logger-callsite base-data)]
-                    (write! data)))))))
+      (let [current-context  (additional-context)
+            callsite-context (utils/callsite-info)]
+        (send-off logging-agent
+                  (fn [_]
+                    (let [formatted-msg (apply format message (utils/realize arguments))
+                          base-data     {:throwable throwable :message formatted-msg :marker marker :level level}
+                          data          (merge callsite-context current-context base-data)]
+                      (write! data))))))))
 
 (defn data-logger-factory []
   (let [state (atom {})]
@@ -113,8 +123,9 @@
 
 (defmacro log [level & args]
   (let [calling-ns (name (.getName *ns*))]
-    `(let [level-arg# ~level
-           level#     (if (vector? level-arg#) (second level-arg#) level-arg#)
-           logger#    (if (vector? level-arg#) (first level-arg#) ~calling-ns)
-           callsite#  ~(assoc (:meta &form) :ns calling-ns)]
-       (send-off logging-agent (fn [_#] (write! (merge callsite# {:level level# :logger logger#})))))))
+    `(let [level-arg#  ~level
+           level#      (if (vector? level-arg#) (second level-arg#) level-arg#)
+           logger#     (if (vector? level-arg#) (first level-arg#) ~calling-ns)
+           callsite#   ~(assoc (:meta &form) :ns calling-ns)
+           additional# (additional-context)]
+       (send-off logging-agent (fn [_#] (write! (merge callsite# additional# {:level level# :logger logger#})))))))
