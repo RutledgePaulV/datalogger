@@ -6,7 +6,6 @@
             [datalogger.utils :as utils])
   (:import (org.slf4j ILoggerFactory)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
-           (com.fasterxml.jackson.databind MapperFeature)
            (java.time Instant)
            (java.net InetAddress)))
 
@@ -28,8 +27,7 @@
 
 (def mapper
   (let [options {:encode-key-fn true :decode-key-fn true}]
-    (doto (jsonista/object-mapper options)
-      (.configure MapperFeature/SORT_PROPERTIES_ALPHABETICALLY true))))
+    (jsonista/object-mapper options)))
 
 (defn mask-sensitive-data [x]
   x)
@@ -68,7 +66,9 @@
                   include-mdc
                   include-context
                   ensure-serializable
-                  mask-sensitive-data)]
+                  mask-sensitive-data
+                  utils/stringify-keys
+                  utils/consistent-order)]
     (jsonista/write-value *out* clean mapper)
     (newline)))
 

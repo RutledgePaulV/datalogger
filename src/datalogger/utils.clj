@@ -11,6 +11,26 @@
               y))]
     (apply merge-with combine maps)))
 
+(defn stringify-key [k]
+  (cond
+    (qualified-keyword? k)
+    (str (namespace k) "/" (name k))
+    (keyword? k)
+    (name k)
+    :otherwise
+    (str k)))
+
+(defn map-keys [f m]
+  (into {} (map (fn [[k v]] [(f k) v]) m)))
+
+(defn stringify-keys [form]
+  (walk/postwalk
+    (fn [form]
+      (if (map? form)
+        (map-keys stringify-key form)
+        form))
+    form))
+
 (defn filter-vals [pred form]
   (walk/postwalk
     (fn [form]
@@ -18,6 +38,18 @@
         (into {} (filter (comp pred val) form))
         form))
     form))
+
+(defn consistent-order [x]
+  (walk/postwalk
+    (fn [form]
+      (cond
+        (map? form)
+        (into (sorted-map) form)
+        (set? form)
+        (into (sorted-set) form)
+        :otherwise
+        form))
+    x))
 
 (defn logger->hierarchy [logger]
   (if (= "*" logger)
