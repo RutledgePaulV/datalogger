@@ -1,4 +1,24 @@
-(defproject datalogger "0.1.0-SNAPSHOT"
+(defproject org.clojars.rutledgepaulv/datalogger "0.1.0-SNAPSHOT"
+
+  :description
+  "A simple structured logging library for Clojure that plays nice with others."
+
+  :url
+  "https://github.com/rutledgepaulv/datalogger"
+
+  :license
+  {:name "MIT License" :url "http://opensource.org/licenses/MIT" :year 2020 :key "mit"}
+
+  :scm
+  {:name "git" :url "https://github.com/rutledgepaulv/datalogger"}
+
+  :pom-addition
+  [:developers
+   [:developer
+    [:name "Paul Rutledge"]
+    [:url "https://github.com/rutledgepaulv"]
+    [:email "rutledgepaulv@gmail.com"]
+    [:timezone "-5"]]]
 
   :dependencies
   [[org.clojure/clojure "1.10.1"]
@@ -11,6 +31,13 @@
 
   :aot
   [datalogger.provider]
+
+  :deploy-repositories
+  [["releases" :clojars]
+   ["snapshots" :clojars]]
+
+  :plugins
+  [[lein-cloverage "1.1.2"]]
 
   :repl-options
   {:init-ns datalogger.core})

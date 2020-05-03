@@ -2,11 +2,13 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [jsonista.core :as jsonista]
-            [clojure.string :as strings])
+            [clojure.string :as strings]
+            [clojure.walk :as walk])
   (:import (org.slf4j ILoggerFactory)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
            (java.util.function Supplier)
-           (org.slf4j.event Level)))
+           (org.slf4j.event Level)
+           (com.fasterxml.jackson.databind MapperFeature)))
 
 (defn deep-merge [& maps]
   (letfn [(combine [x y]
@@ -15,13 +17,23 @@
               y))]
     (apply merge-with combine maps)))
 
-(defn segments [logger]
-  (let [re #"\.[^*.]+$"]
-    (loop [iter logger pieces [logger]]
-      (if (re-find re iter)
-        (recur (strings/replace iter re "")
-               (conj pieces (strings/replace iter re ".*")))
-        (conj pieces "*")))))
+(defn filter-vals [pred form]
+  (walk/postwalk
+    (fn [form]
+      (if (map? form)
+        (into {} (filter (comp pred val) form))
+        form))
+    form))
+
+(defn logger->hierarchy [logger]
+  (if (= "*" logger)
+    ["*"]
+    (let [re #"\.[^*.]+$"]
+      (loop [iter logger pieces [logger]]
+        (if (re-find re iter)
+          (recur (strings/replace iter re "")
+                 (conj pieces (strings/replace iter re ".*")))
+          (conj pieces "*"))))))
 
 (defn level->int [level]
   (.toInt (Level/valueOf (strings/upper-case (name level)))))
@@ -29,12 +41,13 @@
 (defn compile-filter [levels]
   (memoize
     (fn [logger level]
-      (if-some [match (some levels (segments logger))]
+      (if-some [match (some levels (logger->hierarchy logger))]
         (<= (level->int match) (level->int level))
         false))))
 
 (def DEFAULTS
-  {:levels {"*" :error}})
+  {:levels {"*" :warn}
+   :masks  {:keys {} :values {}}})
 
 (defn get-configuration []
   (let [config (if-some [overrides (io/resource "datalogger.edn")]
@@ -52,22 +65,22 @@
                    :error-handler (fn [agent ex] (.printStackTrace ex))))
 
 (def mapper
-  (jsonista/object-mapper
-    {:encode-key-fn true :decode-key-fn true}))
-
+  (let [options {:encode-key-fn true :decode-key-fn true}]
+    (doto (jsonista/object-mapper options)
+      (.configure MapperFeature/SORT_PROPERTIES_ALPHABETICALLY true))))
 
 (defn mask-sensitive-data [x]
   x)
 
 (defn ensure-serializable [x]
-  x)
+  (filter-vals some? x))
 
 (defn log-level-enabled? [logger level]
   (let [filter (:filter @CONFIG)]
     (filter logger level)))
 
 (defn write! [m]
-  (let [clean (into (sorted-map) (-> m ensure-serializable mask-sensitive-data))]
+  (let [clean (-> m ensure-serializable mask-sensitive-data)]
     (jsonista/write-value *out* clean mapper)
     (newline)))
 

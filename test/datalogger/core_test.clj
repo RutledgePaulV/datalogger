@@ -2,6 +2,12 @@
   (:require [clojure.test :refer :all]
             [datalogger.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest logger->hierarchy-test
+  (is (= ["*"] (logger->hierarchy "*")))
+  (is (= ["core" "*"] (logger->hierarchy "core")))
+  (is (= ["core.*" "*"] (logger->hierarchy "core.*")))
+  (is (= ["a.b.c" "a.b.*" "a.*" "*"] (logger->hierarchy "a.b.c"))))
+
+
+(deftest logging-filter-test
+  )

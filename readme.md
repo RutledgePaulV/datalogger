@@ -1,4 +1,6 @@
-### Datalogger
+[![Build Status](https://travis-ci.com/rutledgepaulv/datalogger.svg?branch=develop)](https://travis-ci.com/rutledgepaulv/datalogger)
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.rutledgepaulv/datalogger.svg)](https://clojars.org/org.clojars.rutledgepaulv/datalogger)
+[![codecov](https://codecov.io/gh/rutledgepaulv/datalogger/branch/develop/graph/badge.svg)](https://codecov.io/gh/rutledgepaulv/datalogger)
 
 
 ### Rationale
@@ -11,6 +13,7 @@
 - clojure.tools.logging routes your clojure logging right through the mess instead of around it.
 - timbre is a macro-laden kitchen sink that you have to configure at runtime.
 
+---
 
 ### Resolution
 
@@ -31,3 +34,9 @@ I offer a new logging library for Clojure applications. It is opinionated and re
 - It will accept your arguments in any order because who can remember that.
 - It will use a simple string template language that support accessing values in structured data.
 - It will allow you to provide delayed values for things you don't want to compute unless a log level is enabled.
+
+---
+
+### License
+
+This project is licensed under [MIT license](http://opensource.org/licenses/MIT).

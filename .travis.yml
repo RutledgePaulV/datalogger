@@ -1,0 +1,10 @@
+language: clojure
+matrix:
+  include:
+    - jdk: openjdk12
+      before_install:
+        - rm "${JAVA_HOME}/lib/security/cacerts"
+        - ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+after_success:
+  - lein cloverage --codecov
+  - bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json
