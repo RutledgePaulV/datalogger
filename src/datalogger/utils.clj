@@ -72,11 +72,13 @@
         (string? arg)
         (assoc agg :message arg)
         (keyword? arg)
-        (assoc agg :level arg)
+        (assoc agg :level (strings/upper-case (name arg)))
         (and (vector? arg) (not-empty arg))
         (assoc agg :logger (first arg))
         (and (vector? arg) (some? (second arg)))
-        (assoc agg :level arg)))
+        (assoc agg :level (strings/upper-case (name (second arg))))
+        :otherwise
+        agg))
     {}
     args))
 

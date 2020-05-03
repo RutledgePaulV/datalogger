@@ -5,16 +5,17 @@
             [clojure.string :as strings]
             [datalogger.utils :as utils]
             [datalogger.protos :as protos])
-  (:import (org.slf4j ILoggerFactory)
+  (:import (org.slf4j ILoggerFactory Marker)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
            (java.time Instant)
            (java.net InetAddress)
            (clojure.lang PersistentHashMap)
-           (java.util Map)))
+           (java.util Map)
+           (org.slf4j.bridge SLF4JBridgeHandler)))
 
 (def DEFAULTS
   {:levels {"*" :warn}
-   :mapper {:encode-key-fn true :decode-key-fn true :pretty true}})
+   :mapper {:encode-key-fn true :decode-key-fn true}})
 
 (defn normalize-config [config]
   (let [conf       (utils/deep-merge DEFAULTS config)
@@ -53,6 +54,10 @@
 
 (def hostname (delay (.getHostName (InetAddress/getLocalHost))))
 
+(do
+  (SLF4JBridgeHandler/removeHandlersForRootLogger)
+  (SLF4JBridgeHandler/install))
+
 (defn additional-context []
   {"@timestamp" (Instant/now)
    :hostname    (force hostname)
@@ -88,16 +93,21 @@
   (proxy [LegacyAbstractLogger] []
     (getName []
       logger-name)
-    (isTraceEnabled []
-      (log-level-enabled? logger-name :trace))
-    (isDebugEnabled []
-      (log-level-enabled? logger-name :debug))
-    (isInfoEnabled []
-      (log-level-enabled? logger-name :info))
-    (isWarnEnabled []
-      (log-level-enabled? logger-name :warn))
-    (isErrorEnabled []
-      (log-level-enabled? logger-name :error))
+    (isTraceEnabled
+      ([] (log-level-enabled? logger-name :trace))
+      ([^Marker marker] (log-level-enabled? logger-name :trace)))
+    (isDebugEnabled
+      ([] (log-level-enabled? logger-name :debug))
+      ([^Marker marker] (log-level-enabled? logger-name :debug)))
+    (isInfoEnabled
+      ([] (log-level-enabled? logger-name :info))
+      ([^Marker marker] (log-level-enabled? logger-name :info)))
+    (isWarnEnabled
+      ([] (log-level-enabled? logger-name :warn))
+      ([^Marker marker] (log-level-enabled? logger-name :warn)))
+    (isErrorEnabled
+      ([] (log-level-enabled? logger-name :error))
+      ([^Marker marker] (log-level-enabled? logger-name :error)))
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
       (let [current-context  (additional-context)
@@ -130,11 +140,12 @@
                       (mapv #(jsonista/read-value %1 mapper#)))]
      [lines# (deref prom#)]))
 
-(defmacro log [level & args]
+(defmacro log [& args]
   (let [calling-ns (name (.getName *ns*))]
     `(let [callsite#      ~(assoc (:meta &form) :ns calling-ns)
            additional#    (additional-context)
-           args-by-class# (utils/categorize-arguments args)]
-       (send-off logging-agent (fn [_#] (write! (merge callsite# additional# args-by-class#)))))))
+           args-by-class# ~(utils/categorize-arguments args)]
+       (send-off logging-agent (fn [_#] (write! (merge callsite# additional# args-by-class#))))
+       nil)))
 
 
