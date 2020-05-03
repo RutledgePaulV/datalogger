@@ -4,16 +4,48 @@
             [jsonista.core :as jsonista]
             [clojure.string :as strings])
   (:import (org.slf4j ILoggerFactory)
-           (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter AbstractLogger LegacyAbstractLogger)
-           (java.util.function Supplier)))
+           (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
+           (java.util.function Supplier)
+           (org.slf4j.event Level)))
+
+(defn deep-merge [& maps]
+  (letfn [(combine [x y]
+            (if (and (map? x) (map? y))
+              (deep-merge x y)
+              y))]
+    (apply merge-with combine maps)))
+
+(defn segments [logger]
+  (let [re #"\.[^*.]+$"]
+    (loop [iter logger pieces [logger]]
+      (if (re-find re iter)
+        (recur (strings/replace iter re "")
+               (conj pieces (strings/replace iter re ".*")))
+        (conj pieces "*")))))
+
+(defn level->int [level]
+  (.toInt (Level/valueOf (strings/upper-case (name level)))))
+
+(defn compile-filter [levels]
+  (memoize
+    (fn [logger level]
+      (if-some [match (some levels (segments logger))]
+        (<= (level->int match) (level->int level))
+        false))))
 
 (def DEFAULTS
-  {})
+  {:levels {"*" :error}})
+
+(defn get-configuration []
+  (let [config (if-some [overrides (io/resource "datalogger.edn")]
+                 (deep-merge DEFAULTS (edn/read-string (slurp overrides)))
+                 DEFAULTS)
+        filter (compile-filter (:levels config))]
+    {:config config :filter filter}))
+
 
 (def CONFIG
-  (delay (if-some [overrides (io/resource "datalogger.edn")]
-           (merge DEFAULTS (edn/read-string (slurp overrides)))
-           DEFAULTS)))
+  (delay (get-configuration)))
 
 (def thread (agent nil
                    :error-mode :continue
@@ -31,7 +63,8 @@
   x)
 
 (defn log-level-enabled? [logger level]
-  true)
+  (let [filter (:filter @CONFIG)]
+    (filter logger level)))
 
 (defn write! [m]
   (let [clean (into (sorted-map) (-> m ensure-serializable mask-sensitive-data))]
@@ -69,15 +102,15 @@
     (getName [this]
       logger-name)
     (isTraceEnabled []
-      (log-level-enabled? this :trace))
+      (log-level-enabled? logger-name :trace))
     (isDebugEnabled []
-      (log-level-enabled? this :debug))
+      (log-level-enabled? logger-name :debug))
     (isInfoEnabled []
-      (log-level-enabled? this :info))
+      (log-level-enabled? logger-name :info))
     (isWarnEnabled []
-      (log-level-enabled? this :warn))
+      (log-level-enabled? logger-name :warn))
     (isErrorEnabled []
-      (log-level-enabled? this :error))
+      (log-level-enabled? logger-name :error))
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
       (send-off thread
