@@ -1,6 +1,7 @@
 (ns datalogger.protos
   (:import (clojure.lang MapEntry Keyword)
-           (java.util Map Set List)))
+           (java.util Map Set List)
+           (java.time Instant)))
 
 
 (defn stringify-key [k]
@@ -28,6 +29,12 @@
   Object
   (as-data [x options]
     (.getName (class x)))
+  Thread
+  (as-data [x options]
+    (.getName x))
+  Instant
+  (as-data [x options]
+    (str x))
   String
   (as-data [x options]
     (apply-string-mask x options))

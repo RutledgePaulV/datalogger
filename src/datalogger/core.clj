@@ -8,14 +8,19 @@
   (:import (org.slf4j ILoggerFactory)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
            (java.time Instant)
-           (java.net InetAddress)))
+           (java.net InetAddress)
+           (clojure.lang PersistentHashMap)
+           (java.util Map)))
 
 (def DEFAULTS
-  {:levels {"*" :warn}})
+  {:levels {"*" :warn}
+   :mapper {:encode-key-fn true :decode-key-fn true :pretty true}})
 
 (defn normalize-config [config]
-  (let [conf (utils/deep-merge DEFAULTS config)]
-    (assoc conf :filter (utils/compile-filter (:levels conf)))))
+  (let [conf       (utils/deep-merge DEFAULTS config)
+        mapper     (jsonista/object-mapper (:mapper conf))
+        log-filter (utils/compile-filter (:levels conf))]
+    (assoc conf :filter log-filter :mapper mapper)))
 
 (def CONFIG (atom (normalize-config {})))
 
@@ -25,10 +30,6 @@
 (defn load-configuration! [resource-name]
   (when-some [resource (io/resource resource-name)]
     (set-configuration! (edn/read-string (slurp resource)))))
-
-(def mapper
-  (let [options {:encode-key-fn true :decode-key-fn true}]
-    (jsonista/object-mapper options)))
 
 (defn log-level-enabled? [logger level]
   ((:filter @CONFIG) logger level))
@@ -42,20 +43,20 @@
      (binding [*context* (utils/deep-merge old# ~context)]
        ~@body)))
 
-(defn include-mdc [m]
-  (utils/deep-merge (.getCopyOfContextMap (force mdc-adapter)) m))
+(defn get-mdc []
+  (if-some [context ^Map (.getCopyOfContextMap (force mdc-adapter))]
+    (PersistentHashMap/create context)
+    {}))
 
 (defn include-context [m]
   (utils/deep-merge *context* m))
 
-(def hostname
-  (delay (.getHostName (InetAddress/getLocalHost))))
+(def hostname (delay (.getHostName (InetAddress/getLocalHost))))
 
 (defn additional-context []
-  {"@timestamp" (str (Instant/now))
+  {"@timestamp" (Instant/now)
    :hostname    (force hostname)
-   :thread      (.getName (Thread/currentThread))})
-
+   :thread      (Thread/currentThread)})
 
 (defn expand-data [m]
   (cond-> m
@@ -71,11 +72,11 @@
     (dissoc :throwable :data)))
 
 (defn write! [m]
-  (let [clean (-> (expand-data m)
-                  include-mdc
+  (let [conf  (deref CONFIG)
+        clean (-> (expand-data m)
                   include-context
-                  (protos/as-data (:options @CONFIG)))]
-    (jsonista/write-value *out* clean mapper)
+                  (protos/as-data (:options conf)))]
+    (jsonista/write-value *out* clean (:mapper conf))
     (newline)))
 
 (defn agent-error-handler [agent error]
@@ -100,12 +101,13 @@
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
       (let [current-context  (additional-context)
-            callsite-context (utils/callsite-info)]
+            callsite-context (utils/callsite-info)
+            mdc-context      (get-mdc)]
         (send-off logging-agent
                   (fn [_]
                     (let [formatted-msg (apply format message (utils/realize arguments))
-                          base-data     {:throwable throwable :message formatted-msg :marker marker :level level}
-                          data          (merge callsite-context current-context base-data)]
+                          base-data     {:throwable throwable :message formatted-msg :marker marker :level (str level)}
+                          data          (merge callsite-context current-context mdc-context base-data)]
                       (write! data))))))))
 
 (defn data-logger-factory []
@@ -118,13 +120,14 @@
 (defonce marker-factory (delay (BasicMarkerFactory.)))
 
 (defmacro capture [& body]
-  `(let [prom#  (promise)
-         lines# (->> (with-out-str
-                       (deliver prom# (do ~@body))
-                       (await logging-agent))
-                     (strings/split-lines)
-                     (remove strings/blank?)
-                     (mapv #(jsonista/read-value %1 mapper)))]
+  `(let [prom#   (promise)
+         mapper# (:mapper @CONFIG)
+         lines#  (->> (with-out-str
+                        (deliver prom# (do ~@body))
+                        (await logging-agent))
+                      (strings/split-lines)
+                      (remove strings/blank?)
+                      (mapv #(jsonista/read-value %1 mapper#)))]
      [lines# (deref prom#)]))
 
 (defmacro log [level & args]
