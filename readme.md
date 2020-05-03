@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.com/rutledgepaulv/datalogger.svg?branch=develop)](https://travis-ci.com/rutledgepaulv/datalogger)
+[![Build Status](https://travis-ci.com/rutledgepaulv/datalogger.svg?branch=master)](https://travis-ci.com/rutledgepaulv/datalogger)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.rutledgepaulv/datalogger.svg)](https://clojars.org/org.clojars.rutledgepaulv/datalogger)
-[![codecov](https://codecov.io/gh/rutledgepaulv/datalogger/branch/develop/graph/badge.svg)](https://codecov.io/gh/rutledgepaulv/datalogger)
+[![codecov](https://codecov.io/gh/rutledgepaulv/datalogger/branch/master/graph/badge.svg)](https://codecov.io/gh/rutledgepaulv/datalogger)
 
 
 ### Rationale
