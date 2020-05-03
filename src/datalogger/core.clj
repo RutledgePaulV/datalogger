@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [jsonista.core :as jsonista]
             [clojure.string :as strings]
-            [datalogger.utils :as utils])
+            [datalogger.utils :as utils]
+            [datalogger.protos :as protos])
   (:import (org.slf4j ILoggerFactory)
            (org.slf4j.helpers BasicMarkerFactory BasicMDCAdapter LegacyAbstractLogger)
            (java.time Instant)
@@ -28,12 +29,6 @@
 (def mapper
   (let [options {:encode-key-fn true :decode-key-fn true}]
     (jsonista/object-mapper options)))
-
-(defn mask-sensitive-data [x]
-  x)
-
-(defn ensure-serializable [x]
-  (utils/filter-vals some? x))
 
 (defn log-level-enabled? [logger level]
   ((:filter @CONFIG) logger level))
@@ -61,14 +56,25 @@
    :hostname    (force hostname)
    :thread      (.getName (Thread/currentThread))})
 
+
+(defn expand-data [m]
+  (cond-> m
+    (some? (:throwable m))
+    (-> (assoc :stack_trace (utils/serialize-exception (:throwable m)))
+        (assoc :ex-data (or (ex-data (:throwable m)) {}))
+        (assoc :message (ex-message (:throwable m))))
+    (contains? m :data)
+    (merge (:data m))
+    (string? (:message m))
+    (assoc :message (:message m))
+    :always
+    (dissoc :throwable :data)))
+
 (defn write! [m]
-  (let [clean (-> m
+  (let [clean (-> (expand-data m)
                   include-mdc
                   include-context
-                  ensure-serializable
-                  mask-sensitive-data
-                  utils/stringify-keys
-                  utils/consistent-order)]
+                  (protos/as-data (:options @CONFIG)))]
     (jsonista/write-value *out* clean mapper)
     (newline)))
 
@@ -123,9 +129,9 @@
 
 (defmacro log [level & args]
   (let [calling-ns (name (.getName *ns*))]
-    `(let [level-arg#  ~level
-           level#      (if (vector? level-arg#) (second level-arg#) level-arg#)
-           logger#     (if (vector? level-arg#) (first level-arg#) ~calling-ns)
-           callsite#   ~(assoc (:meta &form) :ns calling-ns)
-           additional# (additional-context)]
-       (send-off logging-agent (fn [_#] (write! (merge callsite# additional# {:level level# :logger logger#})))))))
+    `(let [callsite#      ~(assoc (:meta &form) :ns calling-ns)
+           additional#    (additional-context)
+           args-by-class# (utils/categorize-arguments args)]
+       (send-off logging-agent (fn [_#] (write! (merge callsite# additional# args-by-class#)))))))
+
+
