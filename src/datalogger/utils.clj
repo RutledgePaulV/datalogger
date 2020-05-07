@@ -1,9 +1,7 @@
 (ns datalogger.utils
   (:require [clojure.string :as strings]
-            [clojure.walk :as walk]
             [clojure.stacktrace :as stack])
-  (:import (org.slf4j.event Level)
-           (java.util.function Supplier)))
+  (:import (org.slf4j.event Level)))
 
 (defn deep-merge [& maps]
   (letfn [(combine [x y]
@@ -32,54 +30,27 @@
         (<= (level->int match) (level->int level))
         false))))
 
-(defn frame->data [^StackTraceElement frame]
-  {:class  (.getClassName frame)
-   :method (.getMethodName frame)
-   :line   (.getLineNumber frame)})
-
-(defn not-log-frame? [^StackTraceElement frame]
-  (not= "datalogger.core.DataLogger" (.getClassName frame)))
-
-(defn not-reflection-frame? [^StackTraceElement frame]
-  (let [clazz (.getClassName frame)]
-    (or (strings/starts-with? clazz "jdk.internal.")
-        (strings/starts-with? clazz "java.lang.")
-        (strings/starts-with? clazz "clojure.lang.Reflector"))))
-
-(defn get-calling-frame []
-  (->> (Thread/currentThread)
-       (.getStackTrace)
-       (drop-while (some-fn not-log-frame? not-reflection-frame?))
-       (second)))
-
-(defn callsite-info []
-  (some-> (get-calling-frame) (frame->data)))
-
-(defn touch [arg]
-  (cond (delay? arg) (force arg) (instance? Supplier arg) (.get arg) :else arg))
-
-(defn realize [form]
-  (walk/postwalk touch form))
-
 (defn categorize-arguments [args]
   (reduce
     (fn [agg arg]
       (cond
         (instance? Throwable arg)
-        (assoc agg :throwable arg)
+        (assoc agg :exception arg)
         (map? arg)
         (assoc agg :data arg)
         (string? arg)
         (assoc agg :message arg)
         (keyword? arg)
         (assoc agg :level (strings/upper-case (name arg)))
-        (and (vector? arg) (not-empty arg))
-        (assoc agg :logger (first arg))
-        (and (vector? arg) (some? (second arg)))
-        (assoc agg :level (strings/upper-case (name (second arg))))
+        (vector? arg)
+        (cond-> agg
+          (some? (first arg))
+          (assoc :logger (name (first arg)))
+          (some? (second arg))
+          (assoc :level (strings/upper-case (name (second arg)))))
         :otherwise
         agg))
-    {}
+    {:data {}}
     args))
 
 (defn iterable?
@@ -145,8 +116,7 @@
        m))))
 
 (defn template
-  "A simple string templating function that replaces {x.y.z} placeholders
-   with values from the context."
+  "A simple string templating function that replaces {x.y.z} placeholders with values from the context."
   [text context]
   (letfn [(replacer [[_ group]]
             (let [val (or (get* context group)
@@ -156,5 +126,3 @@
               (if (iterable? val) (strings/join "," (sort val)) (str val))))]
     (strings/replace text #"\{([^\{\}]+)\}" replacer)))
 
-(defn template-string [message data]
-  )

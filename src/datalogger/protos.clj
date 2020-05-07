@@ -1,5 +1,8 @@
 (ns datalogger.protos
-  (:import (clojure.lang MapEntry Keyword Delay Atom ISeq)
+  (:require [jsonista.core :as jsonista]
+            [datalogger.config :as config]
+            [datalogger.utils :as utils])
+  (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile)
            (java.util Map Set List)
            (java.time Instant)
            (java.util.function Supplier)))
@@ -9,6 +12,13 @@
   (if (qualified-keyword? k)
     (str (namespace k) "/" (name k))
     (name k)))
+
+(defn serializable? [x]
+  (try
+    (let [mapper (config/get-object-mapper)]
+      (jsonista/write-value-as-string x mapper))
+    true
+    (catch Exception e false)))
 
 (defn get-mask-for-key [k options]
   )
@@ -24,12 +34,23 @@
   (as-data [x options]))
 
 (extend-protocol LoggableData
+  Object
+  (as-data [x options]
+    (if (serializable? x)
+      x (.getName (class x))))
   Thread
   (as-data [x options]
     (.getName x))
   Instant
   (as-data [x options]
     (str x))
+  Throwable
+  (as-data [x options]
+    (as-data
+      {:message (ex-message x)
+       :trace   (utils/serialize-exception x)
+       :data    (or (ex-data x) {})}
+      options))
   String
   (as-data [x options]
     (apply-string-mask x options))
@@ -41,6 +62,9 @@
   Boolean
   (as-data [x options] x)
   Atom
+  (as-data [x options]
+    (as-data (deref x) options))
+  Volatile
   (as-data [x options]
     (as-data (deref x) options))
   Delay

@@ -1,21 +1,22 @@
 (ns datalogger.provider
-  (:import (org.slf4j.helpers NOPServiceProvider)
+  (:import (org.slf4j.helpers NOPServiceProvider BasicMarkerFactory)
            (org.slf4j.bridge SLF4JBridgeHandler))
   (:gen-class
     :implements [org.slf4j.spi.SLF4JServiceProvider]
     :constructors {[] []}))
 
-(defn _obtain [symbol]
-  (force (deref (requiring-resolve symbol))))
+(defonce marker-factory (delay (BasicMarkerFactory.)))
+(defonce logger-factory (delay ((requiring-resolve 'datalogger.loggers/data-logger-factory))))
+(defonce mdc-adapter (delay (force (deref (requiring-resolve 'datalogger.context/mdc-adapter)))))
 
 (defn -getLoggerFactory [this]
-  (_obtain 'datalogger.core/logger-factory))
+  (force logger-factory))
 
 (defn -getMarkerFactory [this]
-  (_obtain 'datalogger.core/marker-factory))
+  (force marker-factory))
 
 (defn -getMDCAdapter [this]
-  (_obtain 'datalogger.core/mdc-adapter))
+  (force mdc-adapter))
 
 (defn -getRequesteApiVersion [this]
   NOPServiceProvider/REQUESTED_API_VERSION)
