@@ -24,12 +24,12 @@
 
 (defmacro log [& args]
   (let [calling-ns (name (.getName *ns*))]
-    `(let [callsite#    ~(assoc (:meta &form) :ns calling-ns)
-           categorized# ~(utils/categorize-arguments args)]
+    `(let [callsite# ~(assoc (meta &form) :ns calling-ns)]
        (let [context# (context/capture-context)]
          (send-off context/logging-agent
            (fn [_#]
-             (let [full-context# (utils/deep-merge context# callsite# (:data categorized# {}))]
+             (let [categorized#  ~(utils/categorize-arguments args)
+                   full-context# (utils/deep-merge context# callsite# (:data categorized# {}))]
                (context/write!
                  (cond-> full-context#
                    (contains? categorized# :message)
