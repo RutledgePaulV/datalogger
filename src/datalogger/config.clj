@@ -7,7 +7,7 @@
 
 (def DEFAULTS
   {:levels {"*" :warn}
-   :mapper {:encode-key-fn true :decode-key-fn true :pretty false}})
+   :mapper {:encode-key-fn true :decode-key-fn true :pretty true}})
 
 (defn mapper-from-config [config]
   (cond
@@ -21,7 +21,7 @@
   (let [conf       (utils/deep-merge DEFAULTS config)
         mapper     (mapper-from-config conf)
         log-filter (utils/compile-filter (:levels conf))]
-    (assoc conf :filter log-filter :mapper mapper)))
+    (assoc conf :filter log-filter :object-mapper mapper)))
 
 (def CONFIG (atom (normalize-config {})))
 
@@ -33,7 +33,7 @@
     (set-configuration! (edn/read-string (slurp resource)))))
 
 (defn get-object-mapper []
-  (:mapper (deref CONFIG)))
+  (:object-mapper (deref CONFIG)))
 
 (defn get-log-filter []
   (:filter (deref CONFIG)))

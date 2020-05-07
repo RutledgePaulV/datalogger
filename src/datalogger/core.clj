@@ -3,7 +3,8 @@
             [clojure.string :as strings]
             [datalogger.utils :as utils]
             [datalogger.config :as config]
-            [datalogger.context :as context]))
+            [datalogger.context :as context])
+  (:import (com.fasterxml.jackson.databind SerializationFeature)))
 
 
 (defmacro with-context [context & body]
@@ -14,10 +15,13 @@
 (defmacro capture [& body]
   `(let [prom#   (promise)
          mapper# (config/get-object-mapper)
+         splliter# (if (.isEnabled mapper# SerializationFeature/INDENT_OUTPUT)
+                     (fn [s#] (strings/split s# #"^\{\n$"))
+                     strings/split-lines)
          lines#  (->> (with-out-str
                         (deliver prom# (do ~@body))
                         (await context/logging-agent))
-                      (strings/split-lines)
+                      (splliter#)
                       (remove strings/blank?)
                       (mapv #(jsonista/read-value %1 mapper#)))]
      [lines# (deref prom#)]))

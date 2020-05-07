@@ -2,7 +2,7 @@
   (:require [jsonista.core :as jsonista]
             [datalogger.config :as config]
             [datalogger.utils :as utils])
-  (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile)
+  (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)
            (java.util Map Set List)
            (java.time Instant)
            (java.util.function Supplier)))
@@ -44,6 +44,12 @@
   Instant
   (as-data [x options]
     (str x))
+  Symbol
+  (as-data [x options]
+    (name x))
+  Namespace
+  (as-data [x options]
+    (name (.getName x)))
   Throwable
   (as-data [x options]
     (as-data
@@ -56,7 +62,7 @@
     (apply-string-mask x options))
   Keyword
   (as-data [x options]
-    (apply-string-mask (stringify-key x) options))
+    (stringify-key x))
   Number
   (as-data [x options] x)
   Boolean

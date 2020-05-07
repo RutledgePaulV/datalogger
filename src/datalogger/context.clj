@@ -35,5 +35,5 @@
 (defn write! [m]
   (let [conf  (deref config/CONFIG)
         clean (protos/as-data m (:options conf))]
-    (jsonista/write-value *out* clean (:mapper conf))
+    (jsonista/write-value *out* clean (:object-mapper conf))
     (newline)))
