@@ -8,7 +8,7 @@
 
 (def DEFAULTS
   {:levels {"*" :warn}
-   :mapper {:encode-key-fn true :decode-key-fn true :pretty true}})
+   :mapper {:encode-key-fn true :decode-key-fn true :pretty false}})
 
 (defn mapper-from-config [config]
   (cond
