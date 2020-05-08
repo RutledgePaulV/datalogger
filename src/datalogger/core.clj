@@ -56,7 +56,3 @@
                     ^Executor
                     Agent/soloExecutor))
        nil)))
-
-
-
-(log :error "Stuff")

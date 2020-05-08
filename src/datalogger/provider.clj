@@ -3,7 +3,7 @@
            (org.slf4j.bridge SLF4JBridgeHandler)
            (org.slf4j.spi SLF4JServiceProvider))
   (:gen-class
-    :implements [SLF4JServiceProvider]
+    :implements [org.slf4j.spi.SLF4JServiceProvider]
     :constructors {[] []}))
 
 (set! *warn-on-reflection* true)
