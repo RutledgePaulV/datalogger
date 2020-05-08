@@ -65,11 +65,12 @@
             current-extra    (context/execution-context)
             callsite-context (callsite-info)
             extras           {:exception throwable
-                              :level (str level)
-                              :logger logger-name}
+                              :level     (str level)
+                              :logger    logger-name}
+            out              *out*
             callback         (fn [_]
                                (let [msg (apply format message (realize arguments))]
-                                 (context/write! (utils/deep-merge current-extra current-mdc current-context callsite-context extras {:message msg}))))]
+                                 (context/write! out (utils/deep-merge current-extra current-mdc current-context callsite-context extras {:message msg}))))]
         (send-off context/logging-agent callback)))))
 
 (defn data-logger-factory []

@@ -29,8 +29,8 @@
 (def logging-agent ^Agent (agent nil :error-mode :continue))
 
 
-(defn write! [m]
+(defn write! [out m]
   (let [conf  (deref config/CONFIG)
         clean (protos/as-data m (:options conf))]
-    (jsonista/write-value *out* clean (:object-mapper conf))
+    (jsonista/write-value out clean (:object-mapper conf))
     (newline)))

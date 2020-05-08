@@ -34,12 +34,13 @@
     `(let [callsite# ~(assoc (meta &form) :ns calling-ns)]
        (let [context# context/*context*
              mdc# (context/get-mdc)
-             extra# (context/execution-context)]
+             extra# (context/execution-context)
+             out# *out*]
          (.dispatch ^Agent context/logging-agent ^IFn
                     (fn [_#]
              (let [categorized#  ~(utils/categorize-arguments args)
                    full-context# (utils/deep-merge mdc# extra# context# callsite# (:data categorized# {}))]
-               (context/write!
+               (context/write! out#
                  (cond-> full-context#
                    (contains? categorized# :message)
                    (assoc :message (utils/template (:message categorized#) full-context#))
