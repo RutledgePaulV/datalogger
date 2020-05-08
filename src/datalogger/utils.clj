@@ -3,6 +3,8 @@
             [clojure.stacktrace :as stack])
   (:import (org.slf4j.event Level)))
 
+(set! *warn-on-reflection* true)
+
 (defn deep-merge [& maps]
   (letfn [(combine [x y]
             (if (and (map? x) (map? y))

@@ -6,9 +6,10 @@
   (:import (java.net InetAddress)
            (java.time Instant)
            (org.slf4j.helpers BasicMDCAdapter)
-           (clojure.lang PersistentHashMap)
+           (clojure.lang PersistentHashMap Agent)
            (java.util Map)))
 
+(set! *warn-on-reflection* true)
 
 (def ^:dynamic *context* {})
 
@@ -16,7 +17,7 @@
 (defonce mdc-adapter (delay (BasicMDCAdapter.)))
 
 (defn get-mdc []
-  (if-some [context ^Map (.getCopyOfContextMap (force mdc-adapter))]
+  (if-some [context ^Map (.getCopyOfContextMap ^BasicMDCAdapter (force mdc-adapter))]
     (PersistentHashMap/create context)
     {}))
 
@@ -25,11 +26,7 @@
    "@hostname"  (force hostname)
    "@thread"    (Thread/currentThread)})
 
-(defn capture-context []
-  (let [data {"@timestamp" (Instant/now) "@hostname" (force hostname) "@thread" (Thread/currentThread)}]
-    (utils/deep-merge (get-mdc) *context* data)))
-
-(def logging-agent (agent nil :error-mode :continue))
+(def logging-agent ^Agent (agent nil :error-mode :continue))
 
 
 (defn write! [m]

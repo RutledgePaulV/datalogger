@@ -7,6 +7,7 @@
            (java.time Instant)
            (java.util.function Supplier)))
 
+(set! *warn-on-reflection* true)
 
 (defn stringify-key [k]
   (if (qualified-keyword? k)

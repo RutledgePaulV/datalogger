@@ -4,6 +4,7 @@
             [datalogger.utils :as utils]
             [jsonista.core :as jsonista]))
 
+(set! *warn-on-reflection* true)
 
 (def DEFAULTS
   {:levels {"*" :warn}

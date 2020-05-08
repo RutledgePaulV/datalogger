@@ -8,6 +8,7 @@
            (org.slf4j.helpers LegacyAbstractLogger)
            (java.util.function Supplier)))
 
+(set! *warn-on-reflection* true)
 
 (defn frame->data [^StackTraceElement frame]
   {:class  (.getClassName frame)
@@ -33,7 +34,7 @@
   (some-> (get-calling-frame) (frame->data)))
 
 (defn touch [arg]
-  (cond (delay? arg) (force arg) (instance? Supplier arg) (.get arg) :else arg))
+  (cond (delay? arg) (force arg) (instance? Supplier arg) (.get ^Supplier arg) :else arg))
 
 (defn realize [form]
   (walk/postwalk touch form))
@@ -59,14 +60,16 @@
       ([^Marker marker] ((config/get-log-filter) logger-name :error)))
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
-      (let [current-context  (context/capture-context)
+      (let [current-context  context/*context*
+            current-mdc      (context/get-mdc)
+            current-extra    (context/execution-context)
             callsite-context (callsite-info)
             extras           {:exception throwable
                               :level (str level)
                               :logger logger-name}
             callback         (fn [_]
                                (let [msg (apply format message (realize arguments))]
-                                 (context/write! (utils/deep-merge current-context callsite-context extras {:message msg}))))]
+                                 (context/write! (utils/deep-merge current-extra current-mdc current-context callsite-context extras {:message msg}))))]
         (send-off context/logging-agent callback)))))
 
 (defn data-logger-factory []
