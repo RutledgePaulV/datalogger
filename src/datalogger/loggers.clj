@@ -5,7 +5,7 @@
             [datalogger.context :as context]
             [datalogger.utils :as utils])
   (:import (org.slf4j ILoggerFactory Marker)
-           (org.slf4j.helpers LegacyAbstractLogger)
+           (org.slf4j.helpers LegacyAbstractLogger MessageFormatter)
            (java.util.function Supplier)
            (clojure.lang Agent ISeq IFn)
            (java.util.concurrent Executor)))
@@ -41,6 +41,11 @@
 (defn realize [form]
   (walk/postwalk touch form))
 
+(defn maybe-format [msg args]
+  (if (not-empty args)
+    (MessageFormatter/basicArrayFormat msg (object-array (realize args)))
+    msg))
+
 (defn data-logger [logger-name]
   (proxy [LegacyAbstractLogger] []
     (getName []
@@ -73,14 +78,13 @@
         (.dispatch ^Agent context/logging-agent
                    ^IFn
                    (fn [_]
-                     (let [msg (apply format message (realize arguments))]
-                       (context/write! out
-                         (utils/deep-merge current-extra
-                                           current-mdc
-                                           current-context
-                                           callsite-context
-                                           extras
-                                           {:message msg}))))
+                     (context/write! out
+                       (utils/deep-merge current-extra
+                                         current-mdc
+                                         current-context
+                                         callsite-context
+                                         extras
+                                         {:message (maybe-format message arguments)})))
                    ^ISeq
                    (seq [])
                    ^Executor
