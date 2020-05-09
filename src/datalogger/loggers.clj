@@ -6,7 +6,9 @@
             [datalogger.utils :as utils])
   (:import (org.slf4j ILoggerFactory Marker)
            (org.slf4j.helpers LegacyAbstractLogger)
-           (java.util.function Supplier)))
+           (java.util.function Supplier)
+           (clojure.lang Agent ISeq IFn)
+           (java.util.concurrent Executor)))
 
 (set! *warn-on-reflection* true)
 
@@ -67,11 +69,22 @@
             extras           {:exception throwable
                               :level     (str level)
                               :logger    logger-name}
-            out              *out*
-            callback         (fn [_]
-                               (let [msg (apply format message (realize arguments))]
-                                 (context/write! out (utils/deep-merge current-extra current-mdc current-context callsite-context extras {:message msg}))))]
-        (send-off context/logging-agent callback)))))
+            out              *out*]
+        (.dispatch ^Agent context/logging-agent
+                   ^IFn
+                   (fn [_]
+                     (let [msg (apply format message (realize arguments))]
+                       (context/write! out
+                         (utils/deep-merge current-extra
+                                           current-mdc
+                                           current-context
+                                           callsite-context
+                                           extras
+                                           {:message msg}))))
+                   ^ISeq
+                   (seq [])
+                   ^Executor
+                   Agent/soloExecutor)))))
 
 (defn data-logger-factory []
   (let [state (atom {})]

@@ -1,7 +1,9 @@
 (ns datalogger.utils
   (:require [clojure.string :as strings]
-            [clojure.stacktrace :as stack])
-  (:import (org.slf4j.event Level)))
+            [clojure.stacktrace :as stack]
+            [clojure.walk :as walk])
+  (:import (org.slf4j.event Level)
+           (clojure.lang MapEntry)))
 
 (set! *warn-on-reflection* true)
 
@@ -11,6 +13,25 @@
               (deep-merge x y)
               y))]
     (apply merge-with combine maps)))
+
+(defn prefix-key [prefix k]
+  (cond
+    (qualified-keyword? k)
+    k
+    (keyword? k)
+    (keyword (name prefix) (name k))
+    (string? k)
+    (str (name prefix) (name k))
+    :otherwise
+    k))
+
+(defn prefix-keys [prefix m]
+  (walk/postwalk
+    (fn [form]
+      (if (map-entry? form)
+        (MapEntry. (prefix-key prefix (key form)) (val form))
+        form))
+    m))
 
 (defn logger->hierarchy [logger]
   (if (= "*" logger)

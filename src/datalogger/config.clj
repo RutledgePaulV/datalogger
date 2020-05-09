@@ -24,14 +24,12 @@
         log-filter (utils/compile-filter (:levels conf))]
     (assoc conf :filter log-filter :object-mapper mapper)))
 
-(def CONFIG (atom (normalize-config {})))
+(defn load-default-config []
+  (if-some [resource (io/resource "datalogger.edn")]
+    (edn/read-string resource)
+    {}))
 
-(defn set-configuration! [config]
-  (reset! CONFIG (normalize-config config)))
-
-(defn load-configuration-file! [resource-name]
-  (when-some [resource (io/resource resource-name)]
-    (set-configuration! (edn/read-string (slurp resource)))))
+(defonce CONFIG (atom (normalize-config (load-default-config))))
 
 (defn get-object-mapper []
   (:object-mapper (deref CONFIG)))

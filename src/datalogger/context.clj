@@ -7,11 +7,14 @@
            (java.time Instant)
            (org.slf4j.helpers BasicMDCAdapter)
            (clojure.lang PersistentHashMap Agent)
-           (java.util Map)))
+           (java.util Map)
+           (java.io Writer)))
 
 (set! *warn-on-reflection* true)
 
 (def ^:dynamic *context* {})
+
+(def ^:private ^String system-newline (System/getProperty "line.separator"))
 
 (defonce hostname (delay (.getHostName (InetAddress/getLocalHost))))
 (defonce mdc-adapter (delay (BasicMDCAdapter.)))
@@ -26,11 +29,18 @@
    "@hostname"  (force hostname)
    "@thread"    (Thread/currentThread)})
 
-(def logging-agent ^Agent (agent nil :error-mode :continue))
+(defonce logging-agent ^Agent (agent nil :error-mode :continue))
+
+(defn intercept-logging-errors! []
+  (set-error-handler!
+    logging-agent
+    (fn [^Agent a ^Throwable e]
+      (.printStackTrace e))))
 
 
-(defn write! [out m]
+(defn write! [^Writer out m]
   (let [conf  (deref config/CONFIG)
         clean (protos/as-data m (:options conf))]
-    (jsonista/write-value out clean (:object-mapper conf))
-    (newline)))
+    (.write out (jsonista/write-value-as-string clean (:object-mapper conf)))
+    (.append out system-newline)
+    (.flush out)))
