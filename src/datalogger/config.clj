@@ -26,7 +26,7 @@
 
 (defn load-default-config []
   (if-some [resource (io/resource "datalogger.edn")]
-    (edn/read-string resource)
+    (edn/read-string (slurp resource))
     {}))
 
 (defonce CONFIG (atom (normalize-config (load-default-config))))
