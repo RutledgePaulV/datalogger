@@ -1,6 +1,6 @@
-(ns datalogger.utils-test
+(ns datalogger.impl.utils-test
   (:require [clojure.test :refer :all]
-            [datalogger.utils :refer :all]))
+            [datalogger.impl.utils :refer :all]))
 
 
 (deftest logger->hierarchy-test

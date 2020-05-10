@@ -1,9 +1,9 @@
-(ns datalogger.loggers
-  (:require [datalogger.config :as config]
+(ns datalogger.impl.loggers
+  (:require [datalogger.impl.config :as config]
             [clojure.walk :as walk]
             [clojure.string :as strings]
-            [datalogger.context :as context]
-            [datalogger.utils :as utils])
+            [datalogger.impl.context :as context]
+            [datalogger.impl.utils :as utils])
   (:import (org.slf4j ILoggerFactory Marker)
            (org.slf4j.helpers LegacyAbstractLogger MessageFormatter)
            (java.util.function Supplier)

@@ -1,7 +1,7 @@
-(ns datalogger.config
+(ns datalogger.impl.config
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [datalogger.utils :as utils]
+            [datalogger.impl.utils :as utils]
             [jsonista.core :as jsonista]))
 
 (set! *warn-on-reflection* true)
@@ -36,3 +36,19 @@
 
 (defn get-log-filter []
   (:filter (deref CONFIG)))
+
+(defn serializable? [x]
+  (try
+    (let [mapper (get-object-mapper)]
+      (jsonista/write-value-as-string x mapper))
+    true
+    (catch Exception e false)))
+
+(defn get-mask-for-key [k options]
+  )
+
+(defn apply-string-mask [s options]
+  s)
+
+(defn masked-key? [k options]
+  )

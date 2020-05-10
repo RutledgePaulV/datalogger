@@ -1,4 +1,4 @@
-(ns datalogger.provider
+(ns datalogger.impl.provider
   (:import (org.slf4j.helpers NOPServiceProvider BasicMarkerFactory)
            (org.slf4j.bridge SLF4JBridgeHandler)
            (org.slf4j.spi SLF4JServiceProvider))
@@ -9,8 +9,8 @@
 (set! *warn-on-reflection* true)
 
 (defonce marker-factory (delay (BasicMarkerFactory.)))
-(defonce logger-factory (delay ((requiring-resolve 'datalogger.loggers/data-logger-factory))))
-(defonce mdc-adapter (delay (force (deref (requiring-resolve 'datalogger.context/mdc-adapter)))))
+(defonce logger-factory (delay ((requiring-resolve 'datalogger.impl.loggers/data-logger-factory))))
+(defonce mdc-adapter (delay (force (deref (requiring-resolve 'datalogger.impl.context/mdc-adapter)))))
 
 (defn -getLoggerFactory [^SLF4JServiceProvider this]
   (force logger-factory))

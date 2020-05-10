@@ -1,34 +1,12 @@
 (ns datalogger.protos
-  (:require [jsonista.core :as jsonista]
-            [datalogger.config :as config]
-            [datalogger.utils :as utils])
+  (:require [datalogger.impl.config :as config]
+            [datalogger.impl.utils :as utils])
   (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)
            (java.util Map Set List)
            (java.time Instant)
            (java.util.function Supplier)))
 
 (set! *warn-on-reflection* true)
-
-(defn stringify-key [k]
-  (if (qualified-keyword? k)
-    (str (namespace k) "/" (name k))
-    (name k)))
-
-(defn serializable? [x]
-  (try
-    (let [mapper (config/get-object-mapper)]
-      (jsonista/write-value-as-string x mapper))
-    true
-    (catch Exception e false)))
-
-(defn get-mask-for-key [k options]
-  )
-
-(defn apply-string-mask [s options]
-  s)
-
-(defn masked-key? [k options]
-  )
 
 (defprotocol LoggableData
   :extend-via-metadata true
@@ -37,11 +15,11 @@
 (extend-protocol LoggableData
   Object
   (as-data [x options]
-    (if (serializable? x)
+    (if (config/serializable? x)
       x (.getName (class x))))
   Thread
   (as-data [x options]
-    (.getName x))
+    (.getId x))
   Instant
   (as-data [x options]
     (str x))
@@ -60,10 +38,10 @@
       options))
   String
   (as-data [x options]
-    (apply-string-mask x options))
+    (config/apply-string-mask x options))
   Keyword
   (as-data [x options]
-    (stringify-key x))
+    (utils/stringify-key x))
   Number
   (as-data [x options] x)
   Boolean
@@ -87,8 +65,8 @@
     (cond
       (or (nil? (first x)) (nil? (second x)))
       nil
-      (masked-key? x options)
-      [(as-data (key x) options) (as-data (get-mask-for-key x options) options)]
+      (config/masked-key? x options)
+      [(as-data (key x) options) (as-data (config/get-mask-for-key x options) options)]
       :otherwise
       [(as-data (key x) options) (as-data (val x) options)]))
   Map

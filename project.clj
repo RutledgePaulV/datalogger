@@ -30,7 +30,7 @@
    [org.slf4j/jul-to-slf4j "2.0.0-alpha1"]]
 
   :aot
-  [datalogger.provider]
+  [datalogger.impl.provider]
 
   :deploy-repositories
   [["releases" :clojars]

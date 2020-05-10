@@ -1,8 +1,7 @@
-(ns datalogger.context
-  (:require [datalogger.utils :as utils]
-            [jsonista.core :as jsonista]
+(ns datalogger.impl.context
+  (:require [jsonista.core :as jsonista]
             [datalogger.protos :as protos]
-            [datalogger.config :as config])
+            [datalogger.impl.config :as config])
   (:import (java.net InetAddress)
            (java.time Instant)
            (org.slf4j.helpers BasicMDCAdapter)
@@ -30,13 +29,6 @@
    "@thread"    (Thread/currentThread)})
 
 (defonce logging-agent ^Agent (agent nil :error-mode :continue))
-
-(defn intercept-logging-errors! []
-  (set-error-handler!
-    logging-agent
-    (fn [^Agent a ^Throwable e]
-      (.printStackTrace e))))
-
 
 (defn write! [^Writer out m]
   (let [conf  (deref config/CONFIG)

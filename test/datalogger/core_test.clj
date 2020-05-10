@@ -3,7 +3,7 @@
             [datalogger.core :refer :all]))
 
 (def slf4j-logger (org.slf4j.LoggerFactory/getLogger "myLogger"))
-(def jul-logger  (java.util.logging.Logger/getLogger "myLogger"))
+(def jul-logger (java.util.logging.Logger/getLogger "myLogger"))
 (def log4j-logger (org.apache.log4j.Logger/getLogger "myLogger"))
 
 

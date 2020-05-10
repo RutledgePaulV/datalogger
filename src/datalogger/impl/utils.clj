@@ -1,4 +1,4 @@
-(ns datalogger.utils
+(ns datalogger.impl.utils
   (:require [clojure.string :as strings]
             [clojure.stacktrace :as stack]
             [clojure.walk :as walk])
@@ -13,6 +13,15 @@
               (deep-merge x y)
               y))]
     (apply merge-with combine maps)))
+
+(defn stringify-key [k]
+  (cond
+    (qualified-keyword? k)
+    (str (namespace k) "/" (name k))
+    (keyword? k)
+    (name k)
+    :otherwise
+    k))
 
 (defn prefix-key [prefix k]
   (cond
