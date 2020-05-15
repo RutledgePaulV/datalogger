@@ -16,21 +16,25 @@
 
 (defn stringify-key [k]
   (cond
-    (qualified-keyword? k)
+    (qualified-ident? k)
     (str (namespace k) "/" (name k))
-    (keyword? k)
+    (ident? k)
     (name k)
     :otherwise
     k))
 
 (defn prefix-key [prefix k]
   (cond
-    (qualified-keyword? k)
+    (qualified-ident? k)
     k
     (keyword? k)
     (keyword (name prefix) (name k))
     (string? k)
     (str (name prefix) (name k))
+    (qualified-symbol? k)
+    k
+    (symbol? k)
+    (symbol (name prefix) (name k))
     :otherwise
     k))
 

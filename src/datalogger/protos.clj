@@ -25,10 +25,10 @@
     (str x))
   Symbol
   (as-data [x options]
-    (name x))
+    (utils/stringify-key x))
   Namespace
   (as-data [x options]
-    (name (.getName x)))
+    (as-data (.getName x) options))
   Throwable
   (as-data [x options]
     (as-data
