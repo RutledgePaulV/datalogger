@@ -19,7 +19,7 @@
       x (.getName (class x))))
   Thread
   (as-data [x options]
-    (.getId x))
+    (.getName x))
   Instant
   (as-data [x options]
     (str x))
