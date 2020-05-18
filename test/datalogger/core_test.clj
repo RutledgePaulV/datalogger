@@ -5,7 +5,7 @@
 (def slf4j-logger (org.slf4j.LoggerFactory/getLogger "myLogger"))
 (def jul-logger (java.util.logging.Logger/getLogger "myLogger"))
 (def log4j-logger (org.apache.log4j.Logger/getLogger "myLogger"))
-
+(def jcl-logger (org.apache.commons.logging.LogFactory/getLog "myLogger"))
 
 (deftest clojure-logging
   (let [[logs] (capture (log :error "Demonstration {value}." {:value 1}))]
@@ -18,6 +18,12 @@
     (is (not-empty logs))
     (is (= "ERROR" (get-in logs [0 :level])))
     (is (= "Demonstration 1." (get-in logs [0 :message])))))
+
+(deftest jcl-logging
+  (let [[logs] (capture (.error jcl-logger "Demonstration"))]
+    (is (not-empty logs))
+    (is (= "ERROR" (get-in logs [0 :level])))
+    (is (= "Demonstration" (get-in logs [0 :message])))))
 
 (deftest jul-logging
   (let [[logs] (capture (.log jul-logger java.util.logging.Level/SEVERE "Demonstration {0}." 1))]
