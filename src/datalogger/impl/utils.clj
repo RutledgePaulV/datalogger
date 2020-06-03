@@ -3,9 +3,46 @@
             [clojure.stacktrace :as stack]
             [clojure.walk :as walk])
   (:import (org.slf4j.event Level)
-           (clojure.lang MapEntry)))
+           (clojure.lang MapEntry)
+           (java.io Writer StringWriter)))
 
 (set! *warn-on-reflection* true)
+
+(defn teed-writer [^Writer source ^Writer fork]
+  (proxy [Writer] []
+    (write
+      ([c]
+       (cond
+         (int? c)
+         (do (.write source (int c))
+             (.write fork (int c)))
+         (string? c)
+         (do (.write source ^String c)
+             (.write fork ^String c))
+         :otherwise
+         (do (.write source ^chars c)
+             (.write fork ^chars c))))
+      ([c offset length]
+       (cond
+         (string? c)
+         (do (.write source ^String c (int offset) (int length))
+             (.write fork ^String c (int offset) (int length)))
+         :otherwise
+         (do (.write source ^chars c (int offset) (int length))
+             (.write fork ^chars c (int offset) (int length))))))
+    (flush []
+      (.flush source)
+      (.flush fork))
+    (close []
+      (.close source)
+      (.close fork))))
+
+(defmacro with-teed-out-str [& body]
+  `(let [original# *out*
+         s#        (StringWriter.)]
+     (binding [*out* (teed-writer original# s#)]
+       ~@body
+       (str s#))))
 
 (defn deep-merge [& maps]
   (letfn [(combine [x y]

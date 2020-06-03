@@ -31,7 +31,7 @@
          splliter# (if (.isEnabled ^ObjectMapper mapper# SerializationFeature/INDENT_OUTPUT)
                      (fn [s#] (strings/split s# #"^\{\n$"))
                      strings/split-lines)
-         lines#    (->> (with-out-str
+         lines#    (->> (utils/with-teed-out-str
                           (deliver prom# (do ~@body))
                           (await context/logging-agent))
                         (splliter#)
