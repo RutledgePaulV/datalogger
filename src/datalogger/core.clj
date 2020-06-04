@@ -57,7 +57,7 @@
     `(let [callsite#    ~(assoc (meta &form) :ns calling-ns)
            categorized# ~(utils/categorize-arguments args)
            config#      (deref config/CONFIG)]
-       (when ((:filter config#)
+       (when ((config/get-log-filter config#)
               (or (:logger categorized#)
                   (:ns callsite#))
               (:level categorized#))

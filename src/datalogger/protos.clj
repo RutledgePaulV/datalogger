@@ -10,13 +10,17 @@
 
 (defprotocol LoggableData
   :extend-via-metadata true
-  (as-data [x options]))
+  (as-data [x options]
+    "Convert x into serializable (as json) data.
+     Also handle any pruning of sensitive values (defined by options).
+     Also produce a deterministic ordering of any unordered collections."))
 
 (extend-protocol LoggableData
   Object
-  (as-data [x options]
-    (if (config/serializable? x)
-      x (.getName (class x))))
+  (as-data [x {:keys [object-mapper]}]
+    (if (config/serializable? object-mapper x)
+      x
+      (.getName (class x))))
   Thread
   (as-data [x options]
     (.getName x))
@@ -32,13 +36,15 @@
   Throwable
   (as-data [x options]
     (as-data
-      {:message (ex-message x)
-       :trace   (utils/serialize-exception x)
-       :data    (or (ex-data x) {})}
+      (cond->  {:message (ex-message x)
+                :trace   (utils/serialize-exception x)}
+        (ex-data x) (assoc :data (ex-data x)))
       options))
   String
-  (as-data [x options]
-    (config/apply-string-mask x options))
+  (as-data [x {:keys [mask-val? masker]}]
+    (if (mask-val? x)
+      (masker x)
+      x))
   Keyword
   (as-data [x options]
     (utils/stringify-key x))
@@ -61,20 +67,30 @@
   nil
   (as-data [x options] x)
   MapEntry
-  (as-data [x options]
+  (as-data [x {:keys [mask-key? masker] :as options}]
     (cond
       (or (nil? (first x)) (nil? (second x)))
       nil
-      (config/masked-key? x options)
-      [(as-data (key x) options) (as-data (config/get-mask-for-key x options) options)]
+      (mask-key? (key x))
+      [(as-data (key x) options) (masker (val x))]
       :otherwise
       [(as-data (key x) options) (as-data (val x) options)]))
   Map
   (as-data [x options]
-    (into (sorted-map) (keep #(as-data % options) x)))
+    (let [entries (keep #(as-data % options) x)]
+      (try
+        (into (sorted-map) entries)
+        (catch Exception e
+          ; in case it includes things that aren't comparable
+          (into {} entries)))))
   Set
   (as-data [x options]
-    (into (sorted-set) (map #(as-data % options) x)))
+    (let [entries (map #(as-data % options) x)]
+      (try
+        (into (sorted-set) entries)
+        (catch Exception e
+          ; in case it includes things that aren't comparable
+          (into #{} entries)))))
   ISeq
   (as-data [x options]
     (mapv #(as-data % options) x))

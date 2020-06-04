@@ -1,10 +1,10 @@
 (ns datalogger.impl.utils
   (:require [clojure.string :as strings]
             [clojure.stacktrace :as stack]
-            [clojure.walk :as walk])
+            [clojure.set :as sets])
   (:import (org.slf4j.event Level)
-           (clojure.lang MapEntry)
-           (java.io Writer StringWriter)))
+           (java.io Writer StringWriter)
+           (java.util.regex Pattern)))
 
 (set! *warn-on-reflection* true)
 
@@ -60,29 +60,6 @@
     :otherwise
     k))
 
-(defn prefix-key [prefix k]
-  (cond
-    (qualified-ident? k)
-    k
-    (keyword? k)
-    (keyword (name prefix) (name k))
-    (string? k)
-    (str (name prefix) (name k))
-    (qualified-symbol? k)
-    k
-    (symbol? k)
-    (symbol (name prefix) (name k))
-    :otherwise
-    k))
-
-(defn prefix-keys [prefix m]
-  (walk/postwalk
-    (fn [form]
-      (if (map-entry? form)
-        (MapEntry. (prefix-key prefix (key form)) (val form))
-        form))
-    m))
-
 (defn logger->hierarchy [logger]
   (if (= "*" logger)
     ["*"]
@@ -102,6 +79,30 @@
       (if-some [match (some levels (logger->hierarchy logger))]
         (<= (level->int match) (level->int level))
         false))))
+
+(defn ->pattern-string [x]
+  (cond
+    (instance? Pattern x)
+    (str x)
+    (string? x)
+    x
+    (keyword? x)
+    (name x)))
+
+(defn compile-val-pred [values]
+  (if (empty? values)
+    (constantly false)
+    (let [joined (Pattern/compile
+                   (str "(" (strings/join ")|(" (map ->pattern-string values)) ")")
+                   Pattern/CASE_INSENSITIVE)]
+      (fn [x] (some? (re-find joined x))))))
+
+(defn compile-key-pred [keys]
+  (let [expanded (sets/union
+                   (set (map keyword keys))
+                   (set (map name keys)))]
+    (fn [x]
+      (contains? expanded x))))
 
 (defn categorize-arguments [args]
   (reduce

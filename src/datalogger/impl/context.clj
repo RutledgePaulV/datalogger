@@ -30,6 +30,7 @@
 (defonce logging-agent ^Agent (agent nil :error-mode :continue))
 
 (defn write! [conf ^Writer out m]
-  (let [clean (protos/as-data m (:options conf))]
-    (.write out (str (jsonista/write-value-as-string clean (:object-mapper conf)) system-newline))
+  (let [clean (protos/as-data m (meta conf))
+        mapper (some-> conf meta :object-mapper)]
+    (.write out (str (jsonista/write-value-as-string clean mapper) system-newline))
     (.flush out)))
