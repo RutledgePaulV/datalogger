@@ -74,3 +74,8 @@
   (let [[logs] (capture (.error log4j-logger "Demonstration"))]
     (is (not-empty logs))
     (is (= "log4j" (get-in logs [0 :key])))))
+
+(deftest qualified-keywords-interpolation
+  (let [[[log :as logs]] (capture (log :error "Testing {value}" {::value "Interpolation"}))]
+    (is (not-empty logs))
+    (is (= "Testing Interpolation" (:message log)))))

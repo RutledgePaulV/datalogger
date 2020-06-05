@@ -1,7 +1,8 @@
 (ns datalogger.impl.utils
   (:require [clojure.string :as strings]
             [clojure.stacktrace :as stack]
-            [clojure.set :as sets])
+            [clojure.set :as sets]
+            [clojure.walk :as walk])
   (:import (org.slf4j.event Level)
            (java.io Writer StringWriter)
            (java.util.regex Pattern)))
@@ -159,7 +160,7 @@
 (defn get*
   "Like clojure.core/get except treats strings and keywords
    as interchangeable and not-found as the result if there is
-   no found value *or* if the found value is nil."
+   no entry *or* if the entry value is nil."
   ([m k] (get* m k nil))
   ([m k not-found]
    (if-some [result
@@ -189,14 +190,31 @@
            (recur sentinel m (next ks))))
        m))))
 
+(defn unqualify [m]
+  (reduce-kv
+    (fn [m k v]
+      (if (and (qualified-keyword? k)
+               (not (contains? m (keyword (name k)))))
+        (assoc m (keyword (name k)) v)
+        m)) m m))
+
+(defn walk-unqualify [form]
+  (walk/postwalk
+    (fn [form]
+      (if (map? form)
+        (unqualify form)
+        form))
+    form))
+
 (defn template
   "A simple string templating function that replaces {x.y.z} placeholders with values from the context."
   [text context]
-  (letfn [(replacer [[_ group]]
-            (let [val (or (get* context group)
-                          (->> (strings/split group #"\.")
-                               (map parse-best-guess)
-                               (get-in* context)))]
-              (if (iterable? val) (strings/join "," (sort val)) (str val))))]
-    (strings/replace text #"\{([^\{\}]+)\}" replacer)))
+  (let [expanded (walk-unqualify context)]
+    (letfn [(replacer [[_ group]]
+              (let [val (or (get* expanded group)
+                            (->> (strings/split group #"\.")
+                                 (map parse-best-guess)
+                                 (get-in* expanded)))]
+                (if (iterable? val) (strings/join "," (sort val)) (str val))))]
+      (strings/replace text #"\{([^\{\}]+)\}" replacer))))
 
