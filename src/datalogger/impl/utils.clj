@@ -215,6 +215,6 @@
                             (->> (strings/split group #"\.")
                                  (map parse-best-guess)
                                  (get-in* expanded)))]
-                (if (iterable? val) (strings/join "," (sort val)) (str val))))]
+                (if (iterable? val) (strings/join ", " (sort val)) (str val))))]
       (strings/replace text #"\{([^\{\}]+)\}" replacer))))
 

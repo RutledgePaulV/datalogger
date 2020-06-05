@@ -79,3 +79,13 @@
   (let [[[log :as logs]] (capture (log :error "Testing {value}" {::value "Interpolation"}))]
     (is (not-empty logs))
     (is (= "Testing Interpolation" (:message log)))))
+
+(deftest assertions
+  (testing "ordered"
+    (assert-logs [{:level "ERROR"} {:level "WARN"}]
+      (log :error "This is a test of log assertions.")
+      (log :warn "This is a test of log assertions.")))
+  (testing "unordered"
+    (assert-logs (repeat #{{:level "WARN"} {:level "ERROR"}})
+      (log :error "This is a test of log assertions.")
+      (log :warn "This is a test of log assertions."))))

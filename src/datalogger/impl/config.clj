@@ -58,10 +58,6 @@
   ([] (get-log-filter @CONFIG))
   ([config] (some-> config meta :filter)))
 
-(defn get-masker
-  ([] (get-masker @CONFIG))
-  ([config] (some-> config meta :masker)))
-
 (defn serializable? [mapper x]
   (try
     (jsonista/write-value-as-string x mapper)

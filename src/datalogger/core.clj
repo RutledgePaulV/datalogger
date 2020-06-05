@@ -3,7 +3,9 @@
             [clojure.string :as strings]
             [datalogger.impl.utils :as utils]
             [datalogger.impl.config :as config]
-            [datalogger.impl.context :as context])
+            [datalogger.impl.context :as context]
+            [avow.core :as avow]
+            [clojure.test :as test])
   (:import (com.fasterxml.jackson.databind SerializationFeature ObjectMapper)
            (clojure.lang Agent ISeq IFn)
            (java.util.concurrent Executor)))
@@ -38,6 +40,13 @@
                         (remove strings/blank?)
                         (mapv #(jsonista/read-value %1 mapper#)))]
      [lines# (deref prom#)]))
+
+(defmacro assert-logs
+  "Execute body, capture the logs, and avow that the captured logs match the expectation."
+  [expectation & body]
+  `(let [[logs# result#] (capture ~@body)]
+     (test/is (avow/avow ~expectation logs#))
+     result#))
 
 (defmacro log
   "Write to the log.
