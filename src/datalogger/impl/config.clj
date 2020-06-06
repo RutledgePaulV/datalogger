@@ -1,31 +1,36 @@
 (ns datalogger.impl.config
   (:require [datalogger.impl.utils :as utils]
-            [jsonista.core :as jsonista]))
+            [jsonista.core :as jsonista]
+            [clojure.string :as strings]))
 
 (set! *warn-on-reflection* true)
+
+(defn default-masker [x]
+  (if (string? x) (strings/replace x #"." "*") "<redacted>"))
 
 (def DEFAULTS
   {:elide   #{}
    :levels  {"*" :warn "datalogger.core" :info}
-   :masking {:mask "<redacted>" :keys #{} :values #{}}
+   :masking {:mask `default-masker :keys #{} :values #{}}
    :mapper  {:encode-key-fn true :decode-key-fn true :pretty false}})
 
 (defn resolve-symbol [symbol message]
   (if-some [v (some-> symbol requiring-resolve deref)]
-    (cond (fn? v) (v)
-          (delay? v) (force v)
-          :otherwise (throw (ex-info message {})))))
+    v
+    (throw (ex-info message {}))))
 
 (defn mapper-from-config [config]
   (cond
     (map? (:mapper config))
     (jsonista/object-mapper (:mapper config))
-    (symbol? (:mapper config))
-    (resolve-symbol (:mapper config) "Couldn't resolve object mapper.")))
+    (qualified-symbol? (:mapper config))
+    ((resolve-symbol (:mapper config) "Couldn't resolve object mapper constructor."))))
 
 (defn mask-from-config [{{mask :mask} :masking}]
-  (if (string? mask)
+  (cond
+    (string? mask)
     (constantly mask)
+    (qualified-symbol? mask)
     (resolve-symbol mask "Couldn't resolve masking function.")))
 
 (defn normalize-config [config]

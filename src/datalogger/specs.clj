@@ -10,7 +10,7 @@
 (s/def ::mapper-config (s/keys :opt-un [::encode-key-fn ::decode-key-fn ::pretty]))
 (s/def ::levels (s/map-of string? ::level))
 (s/def ::mapper (s/or :config ::mapper-config :pointer ::pointer))
-(s/def ::mask string?)
+(s/def ::mask (s/or :string string? :pointer ::pointer))
 (s/def ::elide (s/coll-of ::ident :kind set?))
 (s/def ::keys (s/coll-of ::ident :kind set?))
 (s/def ::values (s/coll-of string? :kind set?))

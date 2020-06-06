@@ -21,10 +21,10 @@
                                 :ns/something "cats"
                                 :something    "111-11-1111"}))]
       (is (not-empty logs))
-      (is (= "<redacted>" (:ssn one-log)))
+      (is (= "*********" (:ssn one-log)))
       (is (= "badger" (:ns/ssn one-log)))
-      (is (= "<redacted>" (:something one-log)))
-      (is (= "<redacted>" (:ns/something one-log))))))
+      (is (= "***********" (:something one-log)))
+      (is (= "****" (:ns/something one-log))))))
 
 (deftest clojure-logging-with-context
   (with-context {:outside 1}

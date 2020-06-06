@@ -58,8 +58,12 @@
 (defmacro assert-logs
   "Execute body, capture the logs, and avow that the captured logs match the expectation."
   [expectation & body]
-  `(let [[logs# result#] (capture ~@body)]
-     (test/is (avow/avow ~expectation logs#))
+  `(let [[logs# result#] (capture ~@body)
+         expected#  ~expectation
+         truncated# (if (seq? expected#)
+                      (take (count logs#) expected#)
+                      expected#)]
+     (test/is (avow/avow truncated# logs#))
      result#))
 
 (defmacro log
