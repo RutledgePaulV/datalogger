@@ -50,9 +50,10 @@
             current-mdc      (context/get-mdc)
             current-extra    (context/execution-context)
             callsite-context (callsite-info)
-            extras           {:exception throwable
-                              :level     (str level)
-                              :logger    logger-name}
+            extras           (cond->
+                               {:level     (str level)
+                                :logger    logger-name}
+                               throwable (assoc :exception throwable))
             config           (deref config/*config*)
             out              *out*]
         (.dispatch ^Agent context/logging-agent

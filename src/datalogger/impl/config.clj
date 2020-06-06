@@ -5,8 +5,8 @@
 (set! *warn-on-reflection* true)
 
 (def DEFAULTS
-  {:levels  {"*"               :warn
-             "datalogger.core" :info}
+  {:elide   #{}
+   :levels  {"*" :warn "datalogger.core" :info}
    :masking {:mask "<redacted>" :keys #{} :values #{}}
    :mapper  {:encode-key-fn true :decode-key-fn true :pretty false}})
 
@@ -34,10 +34,12 @@
         log-filter (utils/compile-filter (get-in conf [:levels]))
         key-test   (utils/compile-key-pred (get-in conf [:masking :keys]))
         value-test (utils/compile-val-pred (get-in conf [:masking :values]))
+        elide-test (utils/compile-key-pred (get-in conf [:elide]))
         mask       (mask-from-config conf)]
     (with-meta conf
       {:filter        log-filter
        :masker        mask
+       :elide?        elide-test
        :mask-key?     key-test
        :mask-val?     value-test
        :object-mapper mapper})))

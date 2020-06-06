@@ -67,9 +67,9 @@
   nil
   (as-data [x options] x)
   MapEntry
-  (as-data [x {:keys [mask-key? masker] :as options}]
+  (as-data [x {:keys [mask-key? masker elide?] :as options}]
     (cond
-      (nil? (key x))
+      (or (nil? (key x)) (elide? (key x)))
       nil
       (mask-key? (key x))
       [(as-data (key x) options) (masker (val x))]
