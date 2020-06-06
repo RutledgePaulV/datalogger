@@ -20,7 +20,16 @@
   "Set logging configuration options."
   [config]
   (utils/quietly
-    (reset! config/CONFIG (config/normalize-config config))))
+    (reset! config/*config* (config/normalize-config config))))
+
+(defmacro with-config
+  "Alters the config/*config* binding to new configuration for the execution of body."
+  [config & body]
+  `(let [validator# (get-validator config/*config*)]
+     (binding [config/*config*
+               (doto (atom (config/normalize-config ~config))
+                 (set-validator! validator#))]
+       ~@body)))
 
 (defmacro with-context
   "Add data onto the context stack to be included in any logs.
@@ -70,7 +79,7 @@
   (let [calling-ns (name (.getName *ns*))]
     `(let [callsite#    ~(assoc (meta &form) :ns calling-ns)
            categorized# ~(utils/categorize-arguments args)
-           config#      (deref config/CONFIG)]
+           config#      (deref config/*config*)]
        (when ((config/get-log-filter config#)
               (or (:logger categorized#)
                   (:ns callsite#))
@@ -100,24 +109,28 @@
                       Agent/soloExecutor)))
        nil)))
 
-; attach an error handler to the logging agent so we know if
-; there's an error in the logging system
-(set-error-handler!
-  context/logging-agent
-  (fn [^Agent a ^Throwable e]
-    (log :error e "Failed to write log message.")))
-
 
 ; runtime initialization
 (defonce _init
+
   (when-not *compile-files*
+
+    ; attach an error handler to the logging agent so we know if
+    ; there's an error in the logging system
+    (set-error-handler!
+      context/logging-agent
+      (fn [^Agent a ^Throwable e]
+        (log :error e "Failed to write log message.")))
+
     (letfn [(validator [config]
               (if-not (s/valid? ::specs/config config)
                 (do (log :error "Bad datalogger configuration provided, will continue using previous value."
                          {:problems (::s/problems (s/explain-data ::specs/config config))})
                     false)
                 true))]
-      (set-validator! config/CONFIG validator)
+
+      (set-validator! config/*config* validator)
+
       (set-configuration!
         (if-some [resource (io/resource "datalogger.edn")]
           (do (log :info "Merging datalogger.edn from classpath with defaults for logging configuration.")

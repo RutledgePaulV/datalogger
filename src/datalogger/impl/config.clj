@@ -42,15 +42,14 @@
        :mask-val?     value-test
        :object-mapper mapper})))
 
-(defonce CONFIG
-  (atom (normalize-config {})))
+(defonce ^:dynamic *config* (atom (normalize-config {})))
 
 (defn get-object-mapper
-  ([] (get-object-mapper @CONFIG))
+  ([] (get-object-mapper (deref *config*)))
   ([config] (some-> config meta :object-mapper)))
 
 (defn get-log-filter
-  ([] (get-log-filter @CONFIG))
+  ([] (get-log-filter (deref *config*)))
   ([config] (some-> config meta :filter)))
 
 (defn serializable? [mapper x]

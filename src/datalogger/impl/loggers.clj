@@ -53,11 +53,12 @@
             extras           {:exception throwable
                               :level     (str level)
                               :logger    logger-name}
+            config           (deref config/*config*)
             out              *out*]
         (.dispatch ^Agent context/logging-agent
                    ^IFn
                    (fn [_]
-                     (context/write! @config/CONFIG out
+                     (context/write! config out
                        (utils/deep-merge current-extra
                                          current-mdc
                                          current-context

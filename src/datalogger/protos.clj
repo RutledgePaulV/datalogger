@@ -69,7 +69,7 @@
   MapEntry
   (as-data [x {:keys [mask-key? masker] :as options}]
     (cond
-      (or (nil? (first x)) (nil? (second x)))
+      (nil? (key x))
       nil
       (mask-key? (key x))
       [(as-data (key x) options) (masker (val x))]

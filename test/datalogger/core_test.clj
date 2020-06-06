@@ -14,18 +14,17 @@
     (is (= "Demonstration 1." (get-in logs [0 :message])))))
 
 (deftest masking-test
-  (set-configuration! {:masking {:keys #{:ssn :ns/something} :values #{"\\d{3}-\\d{2}-\\d{4}"}}})
-  (let [[[one-log :as logs]]
-        (capture (log :error {:ssn          "something"
-                              :ns/ssn       "badger"
-                              :ns/something "cats"
-                              :something    "111-11-1111"}))]
-    (is (not-empty logs))
-    (is (= "<redacted>" (:ssn one-log)))
-    (is (= "badger" (:ns/ssn one-log)))
-    (is (= "<redacted>" (:something one-log)))
-    (is (= "<redacted>" (:ns/something one-log))))
-  (set-configuration! {:masking {:keys #{} :values #{}}}))
+  (with-config {:masking {:keys #{:ssn :ns/something} :values #{"\\d{3}-\\d{2}-\\d{4}"}}}
+    (let [[[one-log :as logs]]
+          (capture (log :error {:ssn          "something"
+                                :ns/ssn       "badger"
+                                :ns/something "cats"
+                                :something    "111-11-1111"}))]
+      (is (not-empty logs))
+      (is (= "<redacted>" (:ssn one-log)))
+      (is (= "badger" (:ns/ssn one-log)))
+      (is (= "<redacted>" (:something one-log)))
+      (is (= "<redacted>" (:ns/something one-log))))))
 
 (deftest clojure-logging-with-context
   (with-context {:outside 1}
