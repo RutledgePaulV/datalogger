@@ -1,13 +1,12 @@
 (ns datalogger.impl.config
-  (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [datalogger.impl.utils :as utils]
+  (:require [datalogger.impl.utils :as utils]
             [jsonista.core :as jsonista]))
 
 (set! *warn-on-reflection* true)
 
 (def DEFAULTS
-  {:levels  {"*" :warn}
+  {:levels  {"*"               :warn
+             "datalogger.core" :info}
    :masking {:mask "<redacted>" :keys #{} :values #{}}
    :mapper  {:encode-key-fn true :decode-key-fn true :pretty false}})
 
@@ -43,12 +42,8 @@
        :mask-val?     value-test
        :object-mapper mapper})))
 
-(defn load-default-config []
-  (if-some [resource (io/resource "datalogger.edn")]
-    (edn/read-string (slurp resource))
-    {}))
-
-(defonce CONFIG (atom (normalize-config (load-default-config))))
+(defonce CONFIG
+  (atom (normalize-config {})))
 
 (defn get-object-mapper
   ([] (get-object-mapper @CONFIG))

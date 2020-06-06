@@ -5,7 +5,11 @@
             [datalogger.impl.config :as config]
             [datalogger.impl.context :as context]
             [avow.core :as avow]
-            [clojure.test :as test])
+            [clojure.test :as test]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [clojure.spec.alpha :as s]
+            [datalogger.specs :as specs])
   (:import (com.fasterxml.jackson.databind SerializationFeature ObjectMapper)
            (clojure.lang Agent ISeq IFn)
            (java.util.concurrent Executor)))
@@ -15,7 +19,8 @@
 (defn set-configuration!
   "Set logging configuration options."
   [config]
-  (reset! config/CONFIG (config/normalize-config config)))
+  (utils/quietly
+    (reset! config/CONFIG (config/normalize-config config))))
 
 (defmacro with-context
   "Add data onto the context stack to be included in any logs.
@@ -101,3 +106,21 @@
   context/logging-agent
   (fn [^Agent a ^Throwable e]
     (log :error e "Failed to write log message.")))
+
+
+; runtime initialization
+(defonce _init
+  (when-not *compile-files*
+    (letfn [(validator [config]
+              (if-not (s/valid? ::specs/config config)
+                (do (log :error "Bad datalogger configuration provided, will continue using previous value."
+                         {:problems (::s/problems (s/explain-data ::specs/config config))})
+                    false)
+                true))]
+      (set-validator! config/CONFIG validator)
+      (set-configuration!
+        (if-some [resource (io/resource "datalogger.edn")]
+          (do (log :info "Merging datalogger.edn from classpath with defaults for logging configuration.")
+              (edn/read-string (slurp resource)))
+          {})))))
+
