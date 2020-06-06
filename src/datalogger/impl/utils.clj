@@ -214,12 +214,12 @@
 (defn template
   "A simple string templating function that replaces {x.y.z} placeholders with values from the context."
   [text context]
-  (let [expanded (walk-unqualify context)]
+  (let [expanded (delay (walk-unqualify context))]
     (letfn [(replacer [[_ group]]
-              (let [val (or (get* expanded group)
+              (let [val (or (get* (force expanded) group)
                             (->> (strings/split group #"\.")
                                  (map parse-best-guess)
-                                 (get-in* expanded)))]
+                                 (get-in* (force expanded))))]
                 (if (iterable? val) (strings/join ", " (sort val)) (str val))))]
       (strings/replace text #"\{([^\{\}]+)\}" replacer))))
 
