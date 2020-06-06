@@ -45,7 +45,7 @@
   `(let [prom#     (promise)
          mapper#   (config/get-object-mapper)
          splliter# (if (.isEnabled ^ObjectMapper mapper# SerializationFeature/INDENT_OUTPUT)
-                     (fn [s#] (strings/split s# #"^\{\n$"))
+                     utils/split-pretty-printed
                      strings/split-lines)
          lines#    (->> (utils/with-teed-out-str
                           (deliver prom# (do ~@body))

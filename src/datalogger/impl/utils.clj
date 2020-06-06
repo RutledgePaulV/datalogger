@@ -81,6 +81,11 @@
         (<= (level->int match) (level->int level))
         false))))
 
+(defn split-pretty-printed [s]
+  (->> (strings/split s #"(?m)^\}\s*$")
+       (remove strings/blank?)
+       (map #(str % "}"))))
+
 (defn ->pattern-string [x]
   (cond
     (instance? Pattern x)
