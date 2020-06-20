@@ -5,13 +5,13 @@
 
 ### Rationale
 
-I wanted a no-fuss structured logging solution for Clojure. I run all my code in containerized environments
-that only need to write to `stdout` so I really don't require support for other appenders. I want to avoid the 
-java logging ecosystem when I log from Clojure. On the other hand, I want all the logs, including java libraries, 
-to be controlled by a single piece of logging configuration. I don't want to write code to configure logging at runtime. 
-I really just want a static config file, and it might as well be edn. I want built-in support for masking sensitive values.
+I want a no-fuss structured logging solution for Clojure. I run all my code in containerized environments
+that only need to write to `stdout` so I really don't require support for other appenders. I want to avoid the entire
+java logging ecosystem when I log from Clojure. I want all the logs, including java libraries, to be controlled 
+by a single piece of logging configuration. I don't want to write code to configure logging at runtime. I really 
+just want a static config file, and it might as well be edn. I want built-in support for masking sensitive values.
 I want to be able to push contextual data onto the stack and have it added to any logs. I want data from java MDC to appear
-in my logs. I want to easily write tests that assert my log statements and their data. I want as much work as possible to 
+in my logs. I want support for writing tests that assert my log statements and their data. I want as much as possible to 
 happen off of the thread that made the logging call.
 
 ---
@@ -30,7 +30,8 @@ party and make my new layer assume a configurable role in the rest of your cake.
 
 Place a datalogger.edn on the root of your classpath. That's it.
 
-``` 
+```clojure 
+ 
 {; define the logger levels for java classes or clojure namespaces
  ; wildcards are supported to match "everything else" or "everything else within this package"
  :levels  {"*"                               :warn
@@ -48,29 +49,228 @@ Place a datalogger.edn on the root of your classpath. That's it.
 
  ; pretty print the json (nice for local dev but you should probably turn it off in prod)
  :mapper  {:pretty true}}
+
 ```
 
 ---
 
 ### Usage
 
+Add a data map with whatever you want!
+ 
 ```clojure
 
 (log :error {:some-data true})
 
-; => {
-;      "@hostname" : "gigabyte",
-;      "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
-;      "@timestamp" : "2020-06-20T05:29:16.502095Z",
-;      "level" : "ERROR",
-;      "line" : 1,
-;      "logger" : "user",
-;      "ns" : "user",
-;      "some-data" : true
-;    }
+```
+
+```json
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "user",
+  "ns" : "user",
+  "some-data" : true
+}
 
 ```
 
+Add a message!
+
+```clojure 
+
+(log :error "A message")
+
+```
+
+```json 
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "user",
+  "ns" : "user",
+  "message" : "A message"
+}
+
+```
+
+Add a message that interpolates your data!
+
+```clojure
+
+(log :error "A message with a {value}" {:value 1})
+
+```
+
+```json 
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "user",
+  "ns" : "user",
+  "value" : 1
+  "message" : "A message with a 1"
+}
+
+```
+
+Use a custom logger!
+
+```clojure 
+
+(log ["my-logger" :error] "A message")
+
+```
+
+```json 
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "my-logger",
+  "ns" : "user",
+  "message" : "A message"
+}
+
+```
+
+Log an exception!
+
+```clojure 
+
+(log :error (ex-info "Boom!" {}))
+
+```
+
+```json 
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "my-logger",
+  "ns" : "user",
+  "exception" : {
+       "message": "Boom!",
+       "trace": [...],
+       "data": {}
+   }
+}
+
+```
+
+Supply arguments in any combination and in any order!
+
+```clojure 
+
+(log "A message {value}" {:value 1} (ex-info "Test" {}) ["custom-logger" :error])
+
+```
+
+```json 
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "custom-logger",
+  "ns" : "user",
+  "value" : 1,
+  "message": "A message 1",
+  "exception" : {
+       "message": Test",
+       "trace": [...],
+       "data": {}
+   }
+}
+
+```
+
+Add context to the stack. Each push onto the stack deeply merges with what's already there.
+
+```clojure 
+
+(with-context {:outside 1}
+  (with-context {:inside 2}
+    (log :error "Demonstration.")))
+
+```
+
+```json 
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-463f63ea-d077-4d97-8099-9f4a37c4fca3",
+  "@timestamp" : "2020-06-20T13:41:01.572Z",
+  "inside" : 2,
+  "level" : "ERROR",
+  "line" : 3,
+  "logger" : "datalogger.core",
+  "message" : "Demonstration.",
+  "ns" : "datalogger.core",
+  "outside" : 1
+}
+```
+
+### Testing
+
+Assert portions of the data from logs that get written.
+
+```clojure
+
+(assert-logs [{:level "ERROR" :message "Demonstration 1."}]
+    (log :error "Demonstration {value}." {:value 1}))
+
+```
+
+Capture the logs that get written (still prints to stdout too).
+
+```clojure
+
+(def results
+  (capture
+    (log :error "Test")
+    (log :error "Toast")
+    "return-value"))
+
+
+ [[{:@timestamp "2020-06-20T13:24:45.042Z",
+   :ns "datalogger.core",
+   :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
+   :@hostname "gigabyte",
+   :level "ERROR",
+   :line 3,
+   :logger "datalogger.core",
+   :message "Test"}
+  {:@timestamp "2020-06-20T13:24:45.042Z",
+   :ns "datalogger.core",
+   :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
+   :@hostname "gigabyte",
+   :level "ERROR",
+   :line 4,
+   :logger "datalogger.core",
+   :message "Toast"}]
+   "return-value"]
+
+```
 
 ---
 
