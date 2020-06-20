@@ -9,7 +9,7 @@
 
 (deftest clojure-logging
   (assert-logs [{:level "ERROR" :message "Demonstration 1."}]
-    (log :error "Demonstration {value}." {:value 1})) 00)
+    (log :error "Demonstration {value}." {:value 1})))
 
 (deftest masking-test
   (with-config {:masking {:keys #{:ssn :ns/something} :values #{"\\d{3}-\\d{2}-\\d{4}"}}}

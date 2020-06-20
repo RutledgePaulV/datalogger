@@ -82,7 +82,7 @@
   [& args]
   (let [calling-ns (name (.getName *ns*))]
     `(let [callsite#    ~(assoc (meta &form) :ns calling-ns)
-           categorized# ~(utils/categorize-arguments args)
+           categorized# (utils/categorize-arguments (list ~@args))
            config#      (deref config/*config*)]
        (when ((config/get-log-filter config#)
               (or (:logger categorized#)
