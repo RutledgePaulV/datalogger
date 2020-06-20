@@ -1,6 +1,7 @@
 (ns datalogger.protos
   (:require [datalogger.impl.config :as config]
-            [datalogger.impl.utils :as utils])
+            [datalogger.impl.utils :as utils]
+            [clojure.stacktrace :as stack])
   (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)
            (java.util Map Set List)
            (java.time Instant)
@@ -21,6 +22,9 @@
     (if (config/serializable? object-mapper x)
       x
       (.getName (class x))))
+  StackTraceElement
+  (as-data [x options]
+    (as-data (StackTraceElement->vec x) options))
   Thread
   (as-data [x options]
     (.getName x))
@@ -36,8 +40,10 @@
   Throwable
   (as-data [x options]
     (as-data
-      (cond->  {:message (ex-message x)
-                :trace   (utils/serialize-exception x)}
+      (cond-> {:message (ex-message x)
+               :trace   (if-some [e ^Exception (stack/root-cause x)]
+                          (vec (.getStackTrace e))
+                          [])}
         (ex-data x) (assoc :data (ex-data x)))
       options))
   String

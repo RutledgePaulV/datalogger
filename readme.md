@@ -5,35 +5,72 @@
 
 ### Rationale
 
-
-- The Java logging ecosystem is a broken plate that's been haphazardly glued back together.
-- The community is beginning to realize there's great value in logging structured data, not text.
-- It's far from feasible to move the Java ecosystem towards a new standard. 
-- Containers have replaced application servers and aggregating logs has become an infrastructure service.
-- clojure.tools.logging routes your clojure logging right through the mess instead of around it.
-- timbre is a macro-laden kitchen sink that you have to configure at runtime.
+I wanted a no-fuss structured logging solution for Clojure. I run all my code in containerized environments
+that only need to write to `stdout` so I really don't require support for other appenders. I want to avoid the 
+java logging ecosystem when I log from Clojure. On the other hand, I want all the logs, including java libraries, 
+to be controlled by a single piece of logging configuration. I don't want to write code to configure logging at runtime. 
+I really just want a static config file, and it might as well be edn. I want built-in support for masking sensitive values.
+I want to be able to push contextual data onto the stack and have it added to any logs. I want data from java MDC to appear
+in my logs. I want to easily write tests that assert my log statements and their data. I want as much work as possible to 
+happen off of the thread that made the logging call.
 
 ---
 
-### Resolution
+### Caution
 
-I offer a new logging library for Clojure applications. It is opinionated and restrained.
+This library is me satisfying the desires listed above. I think it's great for use within an application, but I would 
+strongly advise against using it in a library, especially if you plan to distribute that library to others who may want 
+alternative logging strategies. As currently implemented, if datalogger is on the classpath it unabashedly claims the 
+logging throne and snuffs out any contenders. Maybe when I'm less frustrated by what logging has become I'll join the
+party and make my new layer assume a configurable role in the rest of your cake.
 
-- It will route all java logging libraries through itself without requiring any configuration.
-- It will only support output as structured data, serialized as json.
-- It will perform all masking / serializing / output on a background thread.
-- It will not support runtime configuration and instead use an edn config file on the classpath. 
-- It will not support pluggable appenders and will only ever write to standard out and standard error.
-- It will provide excellent test facilities for asserting log statements made in your code.
-- It will offer good, though perhaps not great, performance. 
-- It will bypass any and all java logging libraries when you log from Clojure. 
-- It will include any available MDC data in the logs. 
-- It will provide stack-based logging contexts for Clojure that support rich data (not only key/value strings like MDC).
-- It will support filtering for accidental sensitive data.
-- It will namespace attributes to ensure consistent data types for a given key (important if you're later ingesting into elasticsearch).
-- It will accept your arguments in any order because who can remember that.
-- It will use a simple string template language that support accessing values in structured data.
-- It will allow you to provide delayed values for things you don't want to compute unless a log level is enabled.
+---
+
+### Configuration
+
+Place a datalogger.edn on the root of your classpath. That's it.
+
+``` 
+{; define the logger levels for java classes or clojure namespaces
+ ; wildcards are supported to match "everything else" or "everything else within this package"
+ :levels  {"*"                               :warn
+           "org.eclipse.jetty.server.Server" :info
+           "my-app.*"                        :info}
+
+ ; remove this attribute from every log statement if it's present
+ :elide   #{"column"}
+
+ :masking {; mask the value contained at any of these keys
+           :keys   #{:ssn}
+       
+           ; mask any values that match any of these regular expressions
+           :values #{"\\d{3}-\\d{2}-\\d{4}"}}
+
+ ; pretty print the json (nice for local dev but you should probably turn it off in prod)
+ :mapper  {:pretty true}}
+```
+
+---
+
+### Usage
+
+```clojure
+
+(log :error {:some-data true})
+
+; => {
+;      "@hostname" : "gigabyte",
+;      "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+;      "@timestamp" : "2020-06-20T05:29:16.502095Z",
+;      "level" : "ERROR",
+;      "line" : 1,
+;      "logger" : "user",
+;      "ns" : "user",
+;      "some-data" : true
+;    }
+
+```
+
 
 ---
 
