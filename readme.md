@@ -177,7 +177,9 @@ Log an exception!
   "ns" : "user",
   "exception" : {
        "message": "Boom!",
-       "trace": [...],
+       "trace": [
+        {}
+       ],
        "data": {}
    }
 }
@@ -207,8 +209,10 @@ Supply arguments in any combination and in any order!
   "value" : 1,
   "message": "A message 1",
   "exception" : {
-       "message": Test",
-       "trace": [...],
+       "message": "Test",
+       "trace": [
+        {}
+       ],
        "data": {}
    }
 }
