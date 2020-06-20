@@ -276,12 +276,10 @@ Capture the logs that get written (still prints to stdout too).
 
 ```clojure
 
-(def results
-  (capture
-    (log :error "Test")
-    (log :error "Toast")
-    "return-value"))
-
+(capture
+  (log :error "Test")
+  (log :error "Toast")
+  "return-value")
 
 ; a tuple!
 
