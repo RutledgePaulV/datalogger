@@ -1,4 +1,4 @@
-(defproject org.clojars.rutledgepaulv/datalogger "0.1.7"
+(defproject org.clojars.rutledgepaulv/datalogger "0.1.8-SNAPSHOT"
 
   :description
   "A simple structured logging library for Clojure that plays nice with others."
