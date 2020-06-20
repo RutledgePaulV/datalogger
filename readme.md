@@ -56,7 +56,32 @@ Place a datalogger.edn on the root of your classpath. That's it.
 
 ### Usage
 
-Add a data map with whatever you want!
+Log a message!
+
+```clojure
+
+(log :error "A message")
+
+```
+
+```json
+
+{
+  "@hostname" : "gigabyte",
+  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
+  "@timestamp" : "2020-06-20T05:29:16.502095Z",
+  "level" : "ERROR",
+  "line" : 1,
+  "logger" : "user",
+  "ns" : "user",
+  "message" : "A message"
+}
+
+```
+
+---
+
+Log a data map with whatever you want!
  
 ```clojure
 
@@ -78,29 +103,7 @@ Add a data map with whatever you want!
 }
 
 ```
-
-Add a message!
-
-```clojure 
-
-(log :error "A message")
-
-```
-
-```json 
-
-{
-  "@hostname" : "gigabyte",
-  "@thread" : "nRepl-session-7f3e5602-05dc-4891-a1aa-e1aca2cdac27",
-  "@timestamp" : "2020-06-20T05:29:16.502095Z",
-  "level" : "ERROR",
-  "line" : 1,
-  "logger" : "user",
-  "ns" : "user",
-  "message" : "A message"
-}
-
-```
+---
 
 Add a message that interpolates your data!
 
@@ -120,11 +123,14 @@ Add a message that interpolates your data!
   "line" : 1,
   "logger" : "user",
   "ns" : "user",
-  "value" : 1
+  "value" : 1,
   "message" : "A message with a 1"
 }
 
 ```
+
+---
+
 
 Use a custom logger!
 
@@ -148,6 +154,8 @@ Use a custom logger!
 }
 
 ```
+
+---
 
 Log an exception!
 
@@ -175,6 +183,8 @@ Log an exception!
 }
 
 ```
+
+---
 
 Supply arguments in any combination and in any order!
 
@@ -205,6 +215,8 @@ Supply arguments in any combination and in any order!
 
 ```
 
+---
+
 Add context to the stack. Each push onto the stack deeply merges with what's already there.
 
 ```clojure 
@@ -230,6 +242,8 @@ Add context to the stack. Each push onto the stack deeply merges with what's alr
 }
 ```
 
+---
+
 ### Testing
 
 Assert portions of the data from logs that get written.
@@ -240,6 +254,8 @@ Assert portions of the data from logs that get written.
     (log :error "Demonstration {value}." {:value 1}))
 
 ```
+
+---
 
 Capture the logs that get written (still prints to stdout too).
 
