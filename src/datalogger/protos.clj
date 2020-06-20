@@ -24,7 +24,12 @@
       (.getName (class x))))
   StackTraceElement
   (as-data [x options]
-    (as-data (StackTraceElement->vec x) options))
+    (as-data
+      {:class    (.getClassName x)
+       :method   (.getMethodName x)
+       :filename (.getFileName x)
+       :line     (.getLineNumber x)}
+      options))
   Thread
   (as-data [x options]
     (.getName x))

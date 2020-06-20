@@ -28,7 +28,8 @@ party and make my new layer assume a configurable role in the rest of your cake.
 
 ### Configuration
 
-Place a datalogger.edn on the root of your classpath. That's it.
+Place a datalogger.edn on the root of your classpath. That's it. Bundled adapters will route all
+java logging libraries through datalogger and they'll be subject to its configuration.
 
 ```clojure 
  
@@ -38,7 +39,7 @@ Place a datalogger.edn on the root of your classpath. That's it.
            "org.eclipse.jetty.server.Server" :info
            "my-app.*"                        :info}
 
- ; remove this attribute from every log statement if it's present
+ ; remove these attributes from every log statement when present
  :elide   #{"column"}
 
  :masking {; mask the value contained at any of these keys
@@ -178,7 +179,13 @@ Log an exception!
   "exception" : {
        "message": "Boom!",
        "trace": [
-        {}
+            {
+              "class" : "datalogger.core$eval3223",
+              "filename" : "form-init1437998932311614649.clj",
+              "line" : 1,
+              "method" : "invokeStatic"
+            }
+            // ...
        ],
        "data": {}
    }
@@ -211,7 +218,13 @@ Supply arguments in any combination and in any order!
   "exception" : {
        "message": "Test",
        "trace": [
-        {}
+            {
+              "class" : "datalogger.core$eval3223",
+              "filename" : "form-init1437998932311614649.clj",
+              "line" : 1,
+              "method" : "invokeStatic"
+            }
+            // ...
        ],
        "data": {}
    }
@@ -272,22 +285,28 @@ Capture the logs that get written (still prints to stdout too).
     "return-value"))
 
 
- [[{:@timestamp "2020-06-20T13:24:45.042Z",
-   :ns "datalogger.core",
+; a tuple!
+
+[
+ ; a vector of parsed log data from logs that were written.
+ [{:@timestamp "2020-06-20T13:24:45.042Z",
    :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
    :@hostname "gigabyte",
+   :ns "datalogger.core",
    :level "ERROR",
    :line 3,
    :logger "datalogger.core",
    :message "Test"}
   {:@timestamp "2020-06-20T13:24:45.042Z",
-   :ns "datalogger.core",
    :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
+   :ns "datalogger.core",
    :@hostname "gigabyte",
    :level "ERROR",
    :line 4,
    :logger "datalogger.core",
    :message "Toast"}]
+
+   ; return value of body passed to capture
    "return-value"]
 
 ```
