@@ -185,7 +185,6 @@ Log an exception!
               "line" : 1,
               "method" : "invokeStatic"
             }
-            // ...
        ],
        "data": {}
    }
@@ -224,7 +223,6 @@ Supply arguments in any combination and in any order!
               "line" : 1,
               "method" : "invokeStatic"
             }
-            // ...
        ],
        "data": {}
    }
