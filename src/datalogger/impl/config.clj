@@ -9,10 +9,11 @@
   (if (string? x) (strings/replace x #"." "*") "<redacted>"))
 
 (def DEFAULTS
-  {:elide   #{}
-   :levels  {"*" :warn "datalogger.core" :info}
-   :masking {:mask `default-masker :keys #{} :values #{}}
-   :mapper  {:encode-key-fn true :decode-key-fn true :pretty false}})
+  {:elide      #{}
+   :levels     {"*" :warn "datalogger.core" :info}
+   :masking    {:mask `default-masker :keys #{} :values #{}}
+   :mapper     {:encode-key-fn true :decode-key-fn true :pretty false}
+   :exceptions {:root-only false}})
 
 (defn resolve-symbol [symbol message]
   (if-some [v (some-> symbol requiring-resolve deref)]

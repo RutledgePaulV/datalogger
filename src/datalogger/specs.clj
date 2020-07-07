@@ -15,4 +15,6 @@
 (s/def ::keys (s/coll-of ::ident :kind set?))
 (s/def ::values (s/coll-of string? :kind set?))
 (s/def ::masking (s/keys :opt-un [::mask ::keys ::values]))
-(s/def ::config (s/keys :opt-un [::mapper ::levels ::masking ::elide]))
+(s/def ::root-only boolean?)
+(s/def ::exceptions (s/keys :opt-un [::root-only]))
+(s/def ::config (s/keys :opt-un [::mapper ::levels ::masking ::elide ::exceptions]))

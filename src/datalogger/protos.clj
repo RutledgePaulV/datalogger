@@ -45,11 +45,13 @@
   Throwable
   (as-data [x options]
     (as-data
-      (cond-> {:message (ex-message x)
-               :trace   (if-some [e ^Exception (stack/root-cause x)]
-                          (vec (.getStackTrace e))
-                          [])}
-        (ex-data x) (assoc :data (ex-data x)))
+      (if (:root-only options)
+        (let [root (stack/root-cause x)]
+          (cond-> {:message (ex-message root) :trace (vec (.getStackTrace root))}
+            (ex-data root) (assoc :data (ex-data root))))
+        (cond-> {:message (ex-message x) :trace (vec (.getStackTrace x))}
+          (ex-data x) (assoc :data (ex-data x))
+          (.getCause x) (assoc :cause (.getCause x))))
       options))
   String
   (as-data [x {:keys [mask-val? masker]}]
