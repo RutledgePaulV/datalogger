@@ -46,7 +46,7 @@
   (as-data [x options]
     (as-data
       (if (:root-only options)
-        (let [root (stack/root-cause x)]
+        (let [root ^Throwable (stack/root-cause x)]
           (cond-> {:message (ex-message root) :trace (vec (.getStackTrace root))}
             (ex-data root) (assoc :data (ex-data root))))
         (cond-> {:message (ex-message x) :trace (vec (.getStackTrace x))}
