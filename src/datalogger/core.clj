@@ -126,6 +126,10 @@
       (fn [^Agent a ^Throwable e]
         (log :error e "Failed to write log message.")))
 
+    ; make sure that any logs in the pipe get logged before the jvm exits
+    (doto (Runtime/getRuntime)
+      (.addShutdownHook (Thread. ^Runnable (fn [] (await context/logging-agent)))))
+
     (letfn [(validator [config]
               (if-not (s/valid? ::specs/config config)
                 (do (log :error "Bad datalogger configuration provided, will continue using previous value."
@@ -135,9 +139,7 @@
 
       (set-validator! config/*config* validator)
 
-      (set-configuration!
-        (if-some [resource (io/resource "datalogger.edn")]
-          (do (log :info "Merging datalogger.edn from classpath with defaults for logging configuration.")
-              (edn/read-string (slurp resource)))
-          {})))))
+      (when-some [resource (io/resource "datalogger.edn")]
+        (set-configuration! (edn/read-string (slurp resource)))
+        (log :info "Merged datalogger.edn from classpath with defaults for logging configuration.")))))
 
