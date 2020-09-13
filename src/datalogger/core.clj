@@ -126,10 +126,6 @@
       (fn [^Agent a ^Throwable e]
         (log :error e "Failed to write log message.")))
 
-    ; make sure that any logs in the pipe get logged before the jvm exits
-    (doto (Runtime/getRuntime)
-      (.addShutdownHook (Thread. ^Runnable (fn [] (await context/logging-agent)))))
-
     (letfn [(validator [config]
               (if-not (s/valid? ::specs/config config)
                 (do (log :error "Bad datalogger configuration provided, will continue using previous value."

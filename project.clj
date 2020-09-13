@@ -33,6 +33,9 @@
   :aot
   [datalogger.impl.provider]
 
+  :jar-exclusions
+  [#"^datalogger\.edn$"]
+
   :deploy-repositories
   [["releases" :clojars]
    ["snapshots" :clojars]]

@@ -29,7 +29,7 @@ party and make my new layer assume a configurable role in the rest of your cake.
 ### Configuration
 
 Place a datalogger.edn on the root of your classpath. That's it. Bundled adapters will route all
-java logging libraries through datalogger and they'll be subject to its configuration.
+java logging libraries through datalogger and be subject to its configuration.
 
 ```clojure 
  
@@ -261,7 +261,8 @@ Add context to the stack. Each push onto the stack deeply merges with what's alr
 
 ### Testing
 
-Assert portions of the data from logs that get written.
+Assert portions of the data from logs that get written. Assertions are evaluated against the log data
+according to the rules defined by [avow](https://github.com/RutledgePaulV/avow).
 
 ```clojure
 
