@@ -22,7 +22,7 @@
 
   :dependencies
   [[org.clojure/clojure "1.10.1"]
-   [metosin/jsonista "0.2.6"]
+   [metosin/jsonista "0.2.7"]
    [org.slf4j/slf4j-api "2.0.0-alpha1"]
    [org.slf4j/log4j-over-slf4j "2.0.0-alpha1"]
    [org.slf4j/jcl-over-slf4j "2.0.0-alpha1"]

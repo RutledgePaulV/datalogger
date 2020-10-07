@@ -103,12 +103,17 @@
                    Pattern/CASE_INSENSITIVE)]
       (fn [x] (some? (re-find joined x))))))
 
+(defn stringify-ident [ident]
+  (if (qualified-ident? ident)
+    (str (namespace ident) "/" (name ident))
+    (name ident)))
+
 (defn compile-key-pred [keys]
-  (let [expanded (sets/union
-                   (set (map keyword keys))
-                   (set (map name keys)))]
-    (fn [x]
-      (contains? expanded x))))
+  (let [expanded
+        (sets/union
+          (set (map stringify-ident keys))
+          (set (map keyword keys)))]
+    (fn [x] (contains? expanded x))))
 
 (defn categorize-arguments [args]
   (reduce
