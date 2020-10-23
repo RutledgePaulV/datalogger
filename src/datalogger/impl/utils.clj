@@ -108,6 +108,16 @@
     (str (namespace ident) "/" (name ident))
     (name ident)))
 
+(defn branch? [form]
+  (or (and (not (string? form)) (seqable? form))
+      (and (delay? form) (realized? form))))
+
+(defn children [form]
+  (if (delay? form) (list (force form)) (seq form)))
+
+(defn walk-seq [form]
+  (tree-seq branch? children form))
+
 (defn compile-key-pred [keys]
   (let [expanded
         (sets/union

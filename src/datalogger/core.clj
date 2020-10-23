@@ -114,6 +114,26 @@
        nil)))
 
 
+(defmacro deflogged
+  "Define a function that logs its inputs and outputs (and errors). Will not
+   log inputs whose symbol begins with an underscore."
+  [symbol docs bindings & body]
+  `(defn ~symbol ~docs ~bindings
+     (let [inputs# ~(->> (utils/walk-seq bindings)
+                         (filter symbol?)
+                         (remove #(strings/starts-with? (name %) "_"))
+                         (map (fn [s] [(keyword s) s]))
+                         (into {}))
+           fun#    (symbol (resolve '~symbol))]
+       (try
+         (let [return# (do ~@body)]
+           (log :info {:datalogger/function fun# :datalogger/input inputs# :datalogger/output return#})
+           return#)
+         (catch Exception e#
+           (log :error e# {:datalogger/function fun# :datalogger/input inputs#})
+           (throw e#))))))
+
+
 ; runtime initialization
 (defonce _init
 
