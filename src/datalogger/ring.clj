@@ -29,7 +29,8 @@
                               :ring/duration (- (System/currentTimeMillis) started)})
               response)
             (catch Exception e
-              (log/log :error e {:ring/duration (- (System/currentTimeMillis) started)}))))))
+              (log/log :error e {:ring/duration (- (System/currentTimeMillis) started)})
+              (throw e))))))
      ([request respond raise]
       (let [req-id  (UUID/randomUUID)
             started (System/currentTimeMillis)]

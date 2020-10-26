@@ -156,6 +156,12 @@
       (set-validator! config/*config* validator)
 
       (when-some [resource (io/resource "datalogger.edn")]
-        (set-configuration! (edn/read-string (slurp resource)))
+        (let [config (set-configuration! (edn/read-string (slurp resource)))]
+          (when (get-in config [:exceptions :handle-uncaught])
+            (Thread/setDefaultUncaughtExceptionHandler
+              (reify Thread$UncaughtExceptionHandler
+                (^void uncaughtException [this ^Thread thread ^Throwable throwable]
+                  (log :error throwable {"@thread" thread}))))))
+
         (log :info "Merged datalogger.edn from classpath with defaults for logging configuration.")))))
 
