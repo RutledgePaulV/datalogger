@@ -1,5 +1,5 @@
 (ns datalogger.impl.provider
-  (:import (org.slf4j.helpers NOPServiceProvider BasicMarkerFactory)
+  (:import (org.slf4j.helpers NOP_FallbackServiceProvider BasicMarkerFactory)
            (org.slf4j.bridge SLF4JBridgeHandler)
            (org.slf4j.spi SLF4JServiceProvider))
   (:gen-class
@@ -22,7 +22,7 @@
   (force mdc-adapter))
 
 (defn -getRequesteApiVersion [^SLF4JServiceProvider this]
-  NOPServiceProvider/REQUESTED_API_VERSION)
+  NOP_FallbackServiceProvider/REQUESTED_API_VERSION)
 
 (defn -initialize [^SLF4JServiceProvider this]
   (SLF4JBridgeHandler/removeHandlersForRootLogger)

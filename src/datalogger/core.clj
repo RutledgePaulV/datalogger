@@ -12,7 +12,9 @@
             [datalogger.specs :as specs])
   (:import (com.fasterxml.jackson.databind SerializationFeature ObjectMapper)
            (clojure.lang Agent ISeq IFn)
-           (java.util.concurrent Executor)))
+           (java.util.concurrent Executor)
+           (org.slf4j.bridge SLF4JBridgeHandler)
+           (java.util.logging Level Logger)))
 
 (set! *warn-on-reflection* true)
 
@@ -152,6 +154,13 @@
                          {:problems (::s/problems (s/explain-data ::specs/config config))})
                     false)
                 true))]
+
+      (SLF4JBridgeHandler/removeHandlersForRootLogger)
+
+      (SLF4JBridgeHandler/install)
+
+      (doto (Logger/getLogger "")
+        (.setLevel Level/ALL))
 
       (set-validator! config/*config* validator)
 
