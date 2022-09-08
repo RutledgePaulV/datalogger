@@ -21,7 +21,7 @@
 (defn -getMDCAdapter [^SLF4JServiceProvider this]
   (force mdc-adapter))
 
-(defn -getRequesteApiVersion [^SLF4JServiceProvider this]
+(defn -getRequestedApiVersion [^SLF4JServiceProvider this]
   NOP_FallbackServiceProvider/REQUESTED_API_VERSION)
 
 (defn -initialize [^SLF4JServiceProvider this]
