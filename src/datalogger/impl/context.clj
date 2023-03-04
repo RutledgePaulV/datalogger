@@ -1,5 +1,5 @@
 (ns datalogger.impl.context
-  (:require [jsonista.core :as jsonista]
+  (:require [clojure.data.json :as json]
             [datalogger.protos :as protos])
   (:import (java.net InetAddress)
            (java.time Instant)
@@ -31,7 +31,6 @@
 
 (defn write! [conf ^Writer out m]
   (let [root-only (get-in conf [:exceptions :root-only])
-        clean     (protos/as-data m (assoc (meta conf) :root-only root-only))
-        mapper    (some-> conf meta :object-mapper)]
-    (.write out (str (jsonista/write-value-as-string clean mapper) system-newline))
+        clean     (protos/as-data m (assoc (meta conf) :root-only root-only))]
+    (.write out ^String (str (apply json/write-str clean (get conf :json-options {})) system-newline))
     (.flush out)))

@@ -1,5 +1,6 @@
 (ns datalogger.protos
-  (:require [datalogger.impl.config :as config]
+  (:require [clojure.data.json :as json]
+            [datalogger.impl.config :as config]
             [datalogger.impl.utils :as utils]
             [clojure.stacktrace :as stack])
   (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)
@@ -18,10 +19,11 @@
 
 (extend-protocol LoggableData
   Object
-  (as-data [x {:keys [object-mapper]}]
-    (if (config/serializable? object-mapper x)
-      x
-      (.getName (class x))))
+  (as-data [x {:keys [json-options]}]
+    (try
+      (apply json/write-str x (or json-options {}))
+      (catch Exception e
+        (.getName (class x)))))
   StackTraceElement
   (as-data [x options]
     (as-data

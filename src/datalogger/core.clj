@@ -1,20 +1,19 @@
 (ns datalogger.core
-  (:require [jsonista.core :as jsonista]
-            [clojure.string :as strings]
-            [datalogger.impl.utils :as utils]
-            [datalogger.impl.config :as config]
-            [datalogger.impl.context :as context]
-            [avow.core :as avow]
-            [clojure.test :as test]
+  (:require [avow.core :as avow]
+            [clojure.data.json :as json]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
+            [clojure.string :as strings]
+            [clojure.test :as test]
+            [datalogger.impl.config :as config]
+            [datalogger.impl.context :as context]
+            [datalogger.impl.utils :as utils]
             [datalogger.specs :as specs])
-  (:import (com.fasterxml.jackson.databind SerializationFeature ObjectMapper)
-           (clojure.lang Agent ISeq IFn)
+  (:import (clojure.lang Agent IFn ISeq)
            (java.util.concurrent Executor)
-           (org.slf4j.bridge SLF4JBridgeHandler)
-           (java.util.logging Level Logger)))
+           (java.util.logging Level Logger)
+           (org.slf4j.bridge SLF4JBridgeHandler)))
 
 (set! *warn-on-reflection* true)
 
@@ -45,16 +44,15 @@
   "Capture the logs being written."
   [& body]
   `(let [prom#     (promise)
-         mapper#   (config/get-object-mapper)
-         splliter# (if (.isEnabled ^ObjectMapper mapper# SerializationFeature/INDENT_OUTPUT)
+         splitter# (if (get-in config/*config* [:json-options :indent])
                      utils/split-pretty-printed
                      strings/split-lines)
          lines#    (->> (utils/with-teed-out-str
                           (deliver prom# (do ~@body))
                           (await context/logging-agent))
-                        (splliter#)
+                        (splitter#)
                         (remove strings/blank?)
-                        (mapv #(jsonista/read-value %1 mapper#)))]
+                        (mapv #(json/read-str %1 :key-fn keyword)))]
      [lines# (deref prom#)]))
 
 (defmacro assert-logs
@@ -98,17 +96,17 @@
                       (fn [_#]
                         (let [full-context# (utils/deep-merge mdc# extra# context# callsite# (:data categorized# {}))]
                           (context/write! config# out#
-                            (cond-> full-context#
-                              (contains? categorized# :message)
-                              (assoc :message (utils/template (:message categorized#) full-context#))
-                              (contains? categorized# :logger)
-                              (assoc :logger (:logger categorized#))
-                              (not (contains? categorized# :logger))
-                              (assoc :logger (:ns callsite#))
-                              (contains? categorized# :level)
-                              (assoc :level (:level categorized#))
-                              (some? (:exception categorized#))
-                              (assoc :exception (:exception categorized#))))))
+                                          (cond-> full-context#
+                                            (contains? categorized# :message)
+                                            (assoc :message (utils/template (:message categorized#) full-context#))
+                                            (contains? categorized# :logger)
+                                            (assoc :logger (:logger categorized#))
+                                            (not (contains? categorized# :logger))
+                                            (assoc :logger (:ns callsite#))
+                                            (contains? categorized# :level)
+                                            (assoc :level (:level categorized#))
+                                            (some? (:exception categorized#))
+                                            (assoc :exception (:exception categorized#))))))
                       ^ISeq
                       (seq [])
                       ^Executor
