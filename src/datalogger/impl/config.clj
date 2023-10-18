@@ -11,7 +11,7 @@
   {:elide        #{}
    :levels       {"*" :warn "datalogger.core" :info}
    :masking      {:mask `default-masker :keys #{} :values #{}}
-   :json-options {}
+   :json-options {:escape-slash false :escape-js-separators false}
    :exceptions   {:root-only false :handle-uncaught false}})
 
 (defn resolve-symbol [symbol message]

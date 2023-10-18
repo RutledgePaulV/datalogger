@@ -20,7 +20,7 @@
   Object
   (as-data [x {:keys [json-options]}]
     (try
-      (apply json/write-str x (or json-options {}))
+      (apply json/write-str x (mapcat identity (or json-options {})))
       (catch Exception e
         (.getName (class x)))))
   StackTraceElement

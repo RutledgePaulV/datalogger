@@ -32,5 +32,5 @@
 (defn write! [conf ^Writer out m]
   (let [root-only (get-in conf [:exceptions :root-only])
         clean     (protos/as-data m (assoc (meta conf) :root-only root-only))]
-    (.write out ^String (str (apply json/write-str clean (get conf :json-options {})) system-newline))
+    (.write out ^String (str (apply json/write-str clean (mapcat identity (get conf :json-options {}))) system-newline))
     (.flush out)))
