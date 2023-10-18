@@ -1,7 +1,4 @@
-[![Build Status](https://travis-ci.com/rutledgepaulv/datalogger.svg?branch=master)](https://travis-ci.com/rutledgepaulv/datalogger)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.rutledgepaulv/datalogger.svg)](https://clojars.org/org.clojars.rutledgepaulv/datalogger)
-[![codecov](https://codecov.io/gh/rutledgepaulv/datalogger/branch/master/graph/badge.svg)](https://codecov.io/gh/rutledgepaulv/datalogger)
-
 
 ### Rationale
 
@@ -48,8 +45,8 @@ java logging libraries through datalogger and be subject to its configuration.
            ; mask any values that match any of these regular expressions
            :values #{"\\d{3}-\\d{2}-\\d{4}"}}
 
- ; pretty print the json (nice for local dev but you should probably turn it off in prod)
- :mapper  {:pretty true}}
+ ; pretty print the json (nice for local dev, but you should turn it off in prod)
+ :json-options  {:indent true}}
 
 ```
 
