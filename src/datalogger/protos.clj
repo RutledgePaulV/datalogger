@@ -1,6 +1,5 @@
 (ns datalogger.protos
   (:require [clojure.data.json :as json]
-            [datalogger.impl.config :as config]
             [datalogger.impl.utils :as utils]
             [clojure.stacktrace :as stack])
   (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)

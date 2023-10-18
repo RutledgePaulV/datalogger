@@ -13,15 +13,19 @@
 (defn clean [_]
   (b/delete {:path "target"}))
 
+(defn compile [_]
+  (b/compile-clj
+    {:basis      basis
+     :src-dirs   ["src"]
+     :ns-compile ['datalogger.impl.provider]
+     :class-dir  class-dir}))
+
 (defn jar [_]
   (b/write-pom {:class-dir class-dir
                 :lib       lib
                 :version   version
                 :basis     basis
                 :src-dirs  ["src"]})
-  (b/compile-clj {:basis      basis
-                  :src-dirs   ["src"]
-                  :ns-compile ['datalogger.impl.provider]
-                  :class-dir  class-dir})
+  (compile _)
   (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
   (b/jar {:class-dir class-dir :jar-file jar-file}))
