@@ -2,7 +2,7 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'org.clojars.rutledgepaulv/datalogger)
-(def version "1.0.0")
+(def version "1.1.18")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/datalogger.jar" (name lib) version))
@@ -25,6 +25,10 @@
                 :lib       lib
                 :version   version
                 :basis     basis
+                :pom-data  [[:licenses
+                             [:license
+                              [:name "MIT"]
+                              [:url "https://opensource.org/license/mit/"]]]]
                 :src-dirs  ["src"]})
   (compile _)
   (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
