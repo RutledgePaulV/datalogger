@@ -188,7 +188,7 @@
         (set-configuration! (utils/parse-config (slurp resource)))
         (log :info "Merged datalogger.edn from classpath with defaults for logging configuration."))
 
-      (when (get-in config/*config* [:exceptions :handle-uncaught])
+      (when (get-in (deref config/*config*) [:exceptions :handle-uncaught])
         (let [original (Thread/getDefaultUncaughtExceptionHandler)]
           (Thread/setDefaultUncaughtExceptionHandler
             (reify Thread$UncaughtExceptionHandler
