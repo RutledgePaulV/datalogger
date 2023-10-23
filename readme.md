@@ -39,6 +39,9 @@ java logging libraries through datalogger and be subject to its configuration.
  ; remove these attributes from every log statement when present
  :elide   #{"column"}
 
+ ; defaults to stderr to better support CLI tools, but you can change to stdout
+ :stream       :stderr
+ 
  :masking {; mask the value contained at any of these keys
            :keys   #{:ssn}
        
@@ -256,20 +259,6 @@ Add context to the stack. Each push onto the stack deeply merges with what's alr
 
 ---
 
-### Testing
-
-Assert portions of the data from logs that get written. Assertions are evaluated against the log data
-according to the rules defined by [avow](https://github.com/RutledgePaulV/avow).
-
-```clojure
-
-(assert-logs [{:level "ERROR" :message "Demonstration 1."}]
-    (log :error "Demonstration {value}." {:value 1}))
-
-```
-
----
-
 Capture the logs that get written (still prints to stdout too).
 
 ```clojure
@@ -283,25 +272,25 @@ Capture the logs that get written (still prints to stdout too).
 
 [
  ; a vector of parsed log data from logs that were written.
- [{:@timestamp "2020-06-20T13:24:45.042Z",
-   :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
-   :@hostname "gigabyte",
-   :ns "datalogger.core",
-   :level "ERROR",
-   :line 3,
-   :logger "datalogger.core",
-   :message "Test"}
-  {:@timestamp "2020-06-20T13:24:45.042Z",
-   :@thread "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
-   :ns "datalogger.core",
-   :@hostname "gigabyte",
-   :level "ERROR",
-   :line 4,
-   :logger "datalogger.core",
-   :message "Toast"}]
+ [{"@timestamp" "2020-06-20T13:24:45.042Z",
+   "@thread"    "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
+   "@hostname"  "gigabyte",
+   "ns"         "datalogger.core",
+   "level"      "ERROR",
+   "line"       3,
+   "logger"     "datalogger.core",
+   "message"    "Test"}
+  {"@timestamp" "2020-06-20T13:24:45.042Z",
+   "@thread"    "nRepl-session-b9e56f42-4cba-41c9-9632-92da63c93c99",
+   "ns"         "datalogger.core",
+   "@hostname"  "gigabyte",
+   "level"      "ERROR",
+   "line"       4,
+   "logger"     "datalogger.core",
+   "message"    "Toast"}]
 
-   ; return value of body passed to capture
-   "return-value"]
+ ; return value of body passed to capture
+ "return-value"]
 
 ```
 

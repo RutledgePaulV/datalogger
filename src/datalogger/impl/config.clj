@@ -9,10 +9,11 @@
 
 (def DEFAULTS
   {:elide        #{}
+   :stream       :stderr
    :levels       {"*" :warn "datalogger.core" :info}
    :masking      {:mask `default-masker :keys #{} :values #{}}
    :json-options {:escape-slash false :escape-js-separators false}
-   :exceptions   {:root-only false :handle-uncaught false}})
+   :exceptions   {:root-only false :handle-uncaught true}})
 
 (defn resolve-symbol [symbol message]
   (if-some [v (some-> symbol requiring-resolve deref)]
@@ -41,6 +42,11 @@
                 :mask-val? value-test})))
 
 (defonce ^:dynamic *config* (atom (normalize-config {})))
+
+(defn get-log-stream [stream-id]
+  ({:stderr *err*
+    :stdout *out*}
+   stream-id))
 
 (defn get-log-filter
   ([] (get-log-filter (deref *config*)))

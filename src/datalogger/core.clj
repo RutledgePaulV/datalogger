@@ -1,27 +1,30 @@
 (ns datalogger.core
-  (:require [avow.core :as avow]
-            [clojure.data.json :as json]
-            [clojure.edn :as edn]
+  (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
             [clojure.string :as strings]
-            [clojure.test :as test]
             [datalogger.impl.config :as config]
             [datalogger.impl.context :as context]
             [datalogger.impl.utils :as utils]
             [datalogger.specs :as specs])
   (:import (clojure.lang Agent IFn ISeq)
+           (java.io StringWriter)
            (java.util.concurrent Executor)
            (java.util.logging Level Logger)
            (org.slf4j.bridge SLF4JBridgeHandler)))
 
 (set! *warn-on-reflection* true)
 
+(defn update-configuration! [f & args]
+  "Update current config"
+  (letfn [(swap [old-config]
+            (config/normalize-config (apply f old-config args)))]
+    (utils/quietly (swap! config/*config* swap))))
+
 (defn set-configuration!
   "Set logging configuration options."
   [config]
-  (utils/quietly
-    (reset! config/*config* (config/normalize-config config))))
+  (update-configuration! (constantly config)))
 
 (defmacro with-config
   "Alters the config/*config* binding to new configuration for the execution of body."
@@ -32,39 +35,57 @@
                  (set-validator! validator#))]
        ~@body)))
 
+(defmacro with-config+
+  "Alters the config/*config* binding to new configuration for the execution of body."
+  [config & body]
+  `(with-config (utils/deep-merge (deref config/*config*) ~config) ~@body))
+
+(defmacro with-level-context
+  "Add data onto the context stack to be included in any logs at the given level or less
+   severe than the given level. Data is deep merged with data already on the stack."
+  [level context & body]
+  `(binding [context/*context* (utils/deep-merge context/*context* {(strings/upper-case (name ~level)) ~context})]
+     ~@body))
+
 (defmacro with-context
   "Add data onto the context stack to be included in any logs.
    Data is deep merged with data already on the stack."
   [context & body]
-  `(let [old# context/*context*]
-     (binding [context/*context* (utils/deep-merge old# ~context)]
-       ~@body)))
+  `(with-level-context :error ~context ~@body))
+
+(defmacro awaiting
+  "Waits for logs in the buffer to be written before returning."
+  [& body]
+  `(try
+     ~@body
+     (finally
+       (await context/logging-agent))))
 
 (defmacro capture
   "Capture the logs being written."
   [& body]
-  `(let [prom#     (promise)
-         splitter# (if (get-in config/*config* [:json-options :indent])
-                     utils/split-pretty-printed
-                     strings/split-lines)
-         lines#    (->> (utils/with-teed-out-str
-                          (deliver prom# (do ~@body))
-                          (await context/logging-agent))
-                        (splitter#)
-                        (remove strings/blank?)
-                        (mapv #(json/read-str %1 :key-fn keyword)))]
-     [lines# (deref prom#)]))
-
-(defmacro assert-logs
-  "Execute body, capture the logs, and avow that the captured logs match the expectation."
-  [expectation & body]
-  `(let [[logs# result#] (capture ~@body)
-         expected#  ~expectation
-         truncated# (if (seq? expected#)
-                      (take (count logs#) expected#)
-                      expected#)]
-     (test/is (avow/avow truncated# logs#))
-     result#))
+  `(let [config#
+         (deref config/*config*)
+         splitter#
+         (if (get-in config# [:json-options :indent])
+           utils/split-pretty-printed
+           strings/split-lines)
+         string-tee#
+         (StringWriter.)
+         raw-result#
+         (with-open [tee# string-tee#]
+           (case (:stream config#)
+             :stderr (binding [*err* (utils/teed-writer *err* tee#)]
+                       (awaiting ~@body))
+             :stdout (binding [*out* (utils/teed-writer *out* tee#)]
+                       (awaiting ~@body))))
+         raw-lines#
+         (str string-tee#)]
+     [(->> raw-lines#
+           (splitter#)
+           (remove strings/blank?)
+           (mapv #(json/read-str %1)))
+      raw-result#]))
 
 (defmacro log
   "Write to the log.
@@ -88,10 +109,10 @@
               (or (:logger categorized#)
                   (:ns callsite#))
               (:level categorized#))
-         (let [context# context/*context*
+         (let [context# (context/get-context-for-level (:level categorized#))
                mdc#     (context/get-mdc)
                extra#   (context/execution-context)
-               out#     *out*]
+               out#     (config/get-log-stream (:stream config#))]
            (.dispatch ^Agent context/logging-agent ^IFn
                       (fn [_#]
                         (let [full-context# (utils/deep-merge mdc# extra# context# callsite# (:data categorized# {}))]
@@ -144,7 +165,8 @@
     (set-error-handler!
       context/logging-agent
       (fn [^Agent a ^Throwable e]
-        (log :error e "Failed to write log message.")))
+        (with-config+ {"datalogger.core" :trace}
+          (log :error e "Failed to write log message."))))
 
     (letfn [(validator [config]
               (if-not (s/valid? ::specs/config config)
@@ -163,12 +185,17 @@
       (set-validator! config/*config* validator)
 
       (when-some [resource (io/resource "datalogger.edn")]
-        (let [config (set-configuration! (edn/read-string (slurp resource)))]
-          (when (get-in config [:exceptions :handle-uncaught])
-            (Thread/setDefaultUncaughtExceptionHandler
-              (reify Thread$UncaughtExceptionHandler
-                (^void uncaughtException [this ^Thread thread ^Throwable throwable]
-                  (log :error throwable {"@thread" thread}))))))
+        (set-configuration! (utils/parse-config (slurp resource)))
+        (log :info "Merged datalogger.edn from classpath with defaults for logging configuration."))
 
-        (log :info "Merged datalogger.edn from classpath with defaults for logging configuration.")))))
+      (when (get-in config/*config* [:exceptions :handle-uncaught])
+        (let [original (Thread/getDefaultUncaughtExceptionHandler)]
+          (Thread/setDefaultUncaughtExceptionHandler
+            (reify Thread$UncaughtExceptionHandler
+              (^void uncaughtException [this ^Thread thread ^Throwable throwable]
+                (try
+                  (log :error throwable {"@thread" thread})
+                  (finally
+                    (when (some? original)
+                      (.uncaughtException original thread throwable))))))))))))
 
