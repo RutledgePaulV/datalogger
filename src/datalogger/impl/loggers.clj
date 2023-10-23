@@ -1,5 +1,6 @@
 (ns datalogger.impl.loggers
-  (:require [datalogger.impl.config :as config]
+  (:require [clojure.string :as strings]
+            [datalogger.impl.config :as config]
             [clojure.walk :as walk]
             [datalogger.impl.context :as context]
             [datalogger.impl.utils :as utils])
@@ -46,7 +47,7 @@
       ([^Marker marker] ((config/get-log-filter) logger-name :error)))
     (getFullyQualifiedCallerName [] nil)
     (handleNormalizedLoggingCall [level marker message arguments throwable]
-      (let [current-context  context/*context*
+      (let [current-context  (context/get-context-for-level (str level))
             current-mdc      (context/get-mdc)
             current-extra    (context/execution-context)
             callsite-context (callsite-info)
@@ -55,7 +56,7 @@
                                 :logger    logger-name}
                                throwable (assoc :exception throwable))
             config           (deref config/*config*)
-            out              *out*]
+            out              (config/get-log-stream (:stream config))]
         (.dispatch ^Agent context/logging-agent
                    ^IFn
                    (fn [_]

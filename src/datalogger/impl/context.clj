@@ -1,5 +1,6 @@
 (ns datalogger.impl.context
   (:require [clojure.data.json :as json]
+            [datalogger.impl.utils :as utils]
             [datalogger.protos :as protos])
   (:import (java.net InetAddress)
            (java.time Instant)
@@ -11,6 +12,21 @@
 (set! *warn-on-reflection* true)
 
 (def ^:dynamic *context* {})
+
+(def levels
+  {"ERROR" ["ERROR"]
+   "WARN"  ["ERROR" "WARN"]
+   "INFO"  ["ERROR" "WARN" "INFO"]
+   "DEBUG" ["ERROR" "WARN" "INFO" "DEBUG"]
+   "TRACE" ["ERROR" "WARN" "INFO" "DEBUG" "TRACE"]})
+
+(defn get-context-for-level [level]
+  (let [context *context*]
+    (reduce
+      (fn [agg level]
+        (utils/deep-merge agg (get context level {})))
+      {}
+      (rseq (get levels level)))))
 
 (def ^:private ^String system-newline (System/getProperty "line.separator"))
 

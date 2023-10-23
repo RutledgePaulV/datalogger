@@ -1,11 +1,11 @@
 (ns datalogger.impl.utils
-  (:require [clojure.string :as strings]
-            [clojure.stacktrace :as stack]
+  (:require [clojure.edn :as edn]
             [clojure.set :as sets]
+            [clojure.string :as strings]
             [clojure.walk :as walk])
-  (:import (org.slf4j.event Level)
-           (java.io Writer StringWriter)
-           (java.util.regex Pattern)))
+  (:import (java.io Writer)
+           (java.util.regex Pattern)
+           (org.slf4j.event Level)))
 
 (set! *warn-on-reflection* true)
 
@@ -37,13 +37,6 @@
     (close []
       (.close source)
       (.close fork))))
-
-(defmacro with-teed-out-str [& body]
-  `(let [original# *out*
-         s#        (StringWriter.)]
-     (binding [*out* (teed-writer original# s#)]
-       ~@body
-       (str s#))))
 
 (defn deep-merge [& maps]
   (letfn [(combine [x y]
@@ -80,6 +73,14 @@
       (if-some [match (some levels (logger->hierarchy logger))]
         (<= (level->int match) (level->int level))
         false))))
+
+(defn env-data-reader [env-var-name]
+  (when-some [value (System/getenv env-var-name)]
+    (let [as-edn (edn/read-string value)]
+      (if (symbol? as-edn) value as-edn))))
+
+(defn parse-config [config-string]
+  (edn/read-string {:readers {'env env-data-reader}} config-string))
 
 (defn split-pretty-printed [s]
   (->> (strings/split s #"(?m)^\}\s*$")
@@ -155,9 +156,6 @@
        (not (map? x))
        (seqable? x)))
 
-(defn serialize-exception [e]
-  (with-out-str (stack/print-stack-trace (stack/root-cause e))))
-
 (defmacro quietly
   "Execute the body and return nil if there was an error"
   [& body] `(try ~@body (catch Throwable _# nil)))
@@ -168,14 +166,14 @@
   ([x] `(quietly ~x))
   ([x & next] `(if-some [y# (attempt ~x)] y# (attempt ~@next))))
 
-(defn parse-number [s]
+(defn try-parse-number [s]
   (attempt (Long/parseLong s) (Double/parseDouble s)))
 
-(defn parse-boolean [s]
+(defn try-parse-boolean [s]
   ({"true" true "false" false} s))
 
 (defn parse-best-guess [s]
-  (attempt (parse-number s) (parse-boolean s) s))
+  (attempt (try-parse-number s) (try-parse-boolean s) s))
 
 (defn get*
   "Like clojure.core/get except treats strings and keywords

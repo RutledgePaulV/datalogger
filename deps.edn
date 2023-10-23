@@ -1,11 +1,10 @@
 {:deps
- {org.clojure/data.json          {:mvn/version "2.4.0"}
-  org.slf4j/slf4j-api            {:mvn/version "2.0.9"}
-  org.slf4j/log4j-over-slf4j     {:mvn/version "2.0.9"}
-  org.slf4j/jcl-over-slf4j       {:mvn/version "2.0.9"}
-  org.slf4j/osgi-over-slf4j      {:mvn/version "2.0.9"}
-  org.slf4j/jul-to-slf4j         {:mvn/version "2.0.9"}
-  org.clojars.rutledgepaulv/avow {:mvn/version "0.1.0"}}
+ {org.clojure/data.json      {:mvn/version "2.4.0"}
+  org.slf4j/slf4j-api        {:mvn/version "2.0.9"}
+  org.slf4j/log4j-over-slf4j {:mvn/version "2.0.9"}
+  org.slf4j/jcl-over-slf4j   {:mvn/version "2.0.9"}
+  org.slf4j/osgi-over-slf4j  {:mvn/version "2.0.9"}
+  org.slf4j/jul-to-slf4j     {:mvn/version "2.0.9"}}
 
  :paths
  ["src" "resources"]
@@ -16,12 +15,13 @@
  :aliases
  {:build     {:extra-deps  {io.github.clojure/tools.build
                             {:git/url    "https://github.com/clojure/tools.build.git"
-                             :sha        "cc1e33d003e2e9507e8e6e899611f56172dacc0a"
+                             :sha        "e2c97f0fc5673b27fa64894721d23cd950e52887"
                              :exclusions [org.slf4j/slf4j-nop]}}
               :extra-paths ["builds"]
               :ns-default  build}
 
-  :test      {:extra-paths ["test" "target/classes"]}
+  :test      {:extra-paths ["test" "target/classes"]
+              :extra-deps  {org.clojars.rutledgepaulv/avow {:mvn/version "0.1.0"}}}
 
   :run-tests {:extra-deps {io.github.cognitect-labs/test-runner
                            {:git/url "https://github.com/cognitect-labs/test-runner.git"
