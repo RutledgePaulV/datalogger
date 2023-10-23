@@ -74,3 +74,25 @@
 (deftest qualified-keywords-interpolation
   (assert-logs [{"message" "Testing Interpolation" "datalogger.core-test/value" "Interpolation"}]
     (log :error "Testing {value}" {::value "Interpolation"})))
+
+(deftest level-scoped-context
+  (testing "context of a more severe level is always included in log statements of a less severe level"
+    (assert-logs [{"info" true}]
+      (with-config {:levels {"*" :trace}}
+        (with-level-context :info {"info" true}
+          (log :trace "This is a message")))))
+
+  (testing "context of a less severe level is not included in log statements of a more severe level"
+    (let [[logs] (capture
+                   (with-config {:levels {"*" :trace}}
+                     (with-level-context :info {"info" true}
+                       (log :error "This is a message"))))]
+      (is (= 1 (count logs)))
+      (is (= "ERROR" (get-in logs [0 "level"])))
+      (is (not (contains? (first logs) "info")))))
+
+  (testing "context of a given level is always included in log statements of that level"
+    (assert-logs [{"info" true}]
+      (with-config {:levels {"*" :trace}}
+        (with-level-context :info {"info" true}
+          (log :info "This is a message"))))))
