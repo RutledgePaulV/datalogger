@@ -155,47 +155,49 @@
            (throw e#))))))
 
 
-; runtime initialization
+(defn initialize! []
+  ; attach an error handler to the logging agent so we know if
+  ; there's an error in the logging system
+  (set-error-handler!
+    context/logging-agent
+    (fn [^Agent a ^Throwable e]
+      (with-config+ {"datalogger.core" :trace}
+        (log :error e "Failed to write log message."))))
+
+  (letfn [(validator [config]
+            (if-not (s/valid? ::specs/config config)
+              (do (log :error "Bad datalogger configuration provided, will continue using previous value."
+                       {:problems (::s/problems (s/explain-data ::specs/config config))})
+                  false)
+              true))]
+
+    (SLF4JBridgeHandler/removeHandlersForRootLogger)
+
+    (SLF4JBridgeHandler/install)
+
+    (doto (Logger/getLogger "")
+      (.setLevel Level/ALL))
+
+    (set-validator! config/*config* validator)
+
+    (when-some [resource (io/resource "datalogger.edn")]
+      (let [final-config (set-configuration! (utils/parse-config (slurp resource)))]
+        (log :info "Merged datalogger.edn from classpath with defaults for logging configuration."
+             {:datalogger {:config final-config}})))
+
+    (when (get-in (deref config/*config*) [:exceptions :handle-uncaught])
+      (let [original (Thread/getDefaultUncaughtExceptionHandler)]
+        (Thread/setDefaultUncaughtExceptionHandler
+          (reify Thread$UncaughtExceptionHandler
+            (^void uncaughtException [this ^Thread thread ^Throwable throwable]
+              (try
+                (log :error throwable {"@thread" thread})
+                (finally
+                  (when (some? original)
+                    (.uncaughtException original thread throwable)))))))))))
+
+; automatic initialization
 (defonce _init
-
   (when-not *compile-files*
-
-    ; attach an error handler to the logging agent so we know if
-    ; there's an error in the logging system
-    (set-error-handler!
-      context/logging-agent
-      (fn [^Agent a ^Throwable e]
-        (with-config+ {"datalogger.core" :trace}
-          (log :error e "Failed to write log message."))))
-
-    (letfn [(validator [config]
-              (if-not (s/valid? ::specs/config config)
-                (do (log :error "Bad datalogger configuration provided, will continue using previous value."
-                         {:problems (::s/problems (s/explain-data ::specs/config config))})
-                    false)
-                true))]
-
-      (SLF4JBridgeHandler/removeHandlersForRootLogger)
-
-      (SLF4JBridgeHandler/install)
-
-      (doto (Logger/getLogger "")
-        (.setLevel Level/ALL))
-
-      (set-validator! config/*config* validator)
-
-      (when-some [resource (io/resource "datalogger.edn")]
-        (set-configuration! (utils/parse-config (slurp resource)))
-        (log :info "Merged datalogger.edn from classpath with defaults for logging configuration."))
-
-      (when (get-in (deref config/*config*) [:exceptions :handle-uncaught])
-        (let [original (Thread/getDefaultUncaughtExceptionHandler)]
-          (Thread/setDefaultUncaughtExceptionHandler
-            (reify Thread$UncaughtExceptionHandler
-              (^void uncaughtException [this ^Thread thread ^Throwable throwable]
-                (try
-                  (log :error throwable {"@thread" thread})
-                  (finally
-                    (when (some? original)
-                      (.uncaughtException original thread throwable))))))))))))
+    (initialize!)))
 
