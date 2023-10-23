@@ -2,7 +2,7 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'org.clojars.rutledgepaulv/datalogger)
-(def version "2.0.0")
+(def version "2.0.1")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/datalogger.jar" (name lib) version))
