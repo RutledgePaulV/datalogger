@@ -1,10 +1,10 @@
 {:deps
- {org.clojure/data.json      {:mvn/version "2.4.0"}
-  org.slf4j/slf4j-api        {:mvn/version "2.0.9"}
-  org.slf4j/log4j-over-slf4j {:mvn/version "2.0.9"}
-  org.slf4j/jcl-over-slf4j   {:mvn/version "2.0.9"}
-  org.slf4j/osgi-over-slf4j  {:mvn/version "2.0.9"}
-  org.slf4j/jul-to-slf4j     {:mvn/version "2.0.9"}}
+ {org.clojure/data.json      {:mvn/version "2.5.1"}
+  org.slf4j/slf4j-api        {:mvn/version "2.0.16"}
+  org.slf4j/log4j-over-slf4j {:mvn/version "2.0.16"}
+  org.slf4j/jcl-over-slf4j   {:mvn/version "2.0.16"}
+  org.slf4j/osgi-over-slf4j  {:mvn/version "2.0.16"}
+  org.slf4j/jul-to-slf4j     {:mvn/version "2.0.16"}}
 
  :paths
  ["src" "resources"]
@@ -15,7 +15,7 @@
  :aliases
  {:build     {:extra-deps  {io.github.clojure/tools.build
                             {:git/url    "https://github.com/clojure/tools.build.git"
-                             :sha        "e2c97f0fc5673b27fa64894721d23cd950e52887"
+                             :sha        "9786ba84f47aeba7eb7faabaac02397a3f30033a"
                              :exclusions [org.slf4j/slf4j-nop]}}
               :extra-paths ["builds"]
               :ns-default  build}
@@ -25,6 +25,6 @@
 
   :run-tests {:extra-deps {io.github.cognitect-labs/test-runner
                            {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                            :sha     "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}}
+                            :sha     "3f288f1f16d167723ad87cc35b1dfee3c1681e10"}}
               :main-opts  ["-m" "cognitect.test-runner"]
               :exec-fn    cognitect.test-runner.api/test}}}
