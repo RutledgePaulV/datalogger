@@ -32,11 +32,17 @@
   (let [trace-pattern (repeat {"class" string? "filename" string? "line" number? "method" string?})]
     (testing "tree of exceptions"
       (with-config {:exceptions {:root-only false}}
-        (assert-logs [{"exception" {"message" "Outer" "trace" trace-pattern "cause" {"message" "Inner"}}}]
+        (assert-logs [{"exception" {"class" "java.lang.RuntimeException"
+                                    "message" "Outer"
+                                    "trace" trace-pattern
+                                    "cause" {"message" "Inner"}}}]
           (log :error (RuntimeException. "Outer" (ex-info "Inner" {}))))))
     (testing "only the root exception"
       (with-config {:exceptions {:root-only true}}
-        (assert-logs [{"exception" {"message" "Inner" "trace" trace-pattern "cause" nil?}}]
+        (assert-logs [{"exception" {"class" "clojure.lang.ExceptionInfo"
+                                    "message" "Inner"
+                                    "trace" trace-pattern
+                                    "cause" nil?}}]
           (log :error (RuntimeException. "Outer" (ex-info "Inner" {}))))))))
 
 (deftest clojure-logging-with-context
