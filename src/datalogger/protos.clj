@@ -48,9 +48,13 @@
     (as-data
       (if (:root-only options)
         (let [root ^Throwable (stack/root-cause x)]
-          (cond-> {:message (ex-message root) :trace (vec (.getStackTrace root))}
+          (cond-> {:class (.getName (class root))
+                   :message (ex-message root)
+                   :trace (vec (.getStackTrace root))}
             (ex-data root) (assoc :data (ex-data root))))
-        (cond-> {:message (ex-message x) :trace (vec (.getStackTrace x))}
+        (cond-> {:class (.getName (class x))
+                 :message (ex-message x)
+                 :trace (vec (.getStackTrace x))}
           (ex-data x) (assoc :data (ex-data x))
           (.getCause x) (assoc :cause (.getCause x))))
       options))
