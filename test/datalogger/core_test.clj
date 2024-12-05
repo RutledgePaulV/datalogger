@@ -53,7 +53,20 @@
 
 (deftest slf4j-logging
   (assert-logs [{"level" "ERROR" "message" "Demonstration 1."}]
-    (.error slf4j-logger "Demonstration {}." 1)))
+    (.error slf4j-logger "Demonstration {}." 1))
+  (testing "slf4j events are logged richly"
+    (let [e (Exception.)]
+      (assert-logs [{"level" "ERROR"
+                     "message" "Demonstration 1."
+                     "exception" {"class" "java.lang.Exception"}
+                     "foo" {"bar" "baz"}}]
+        (-> slf4j-logger
+            .atError
+            (.setCause e)
+            (.setMessage "Demonstration {}.")
+            ^org.slf4j.spi.LoggingEventBuilder (.addArgument 1)
+            (.addKeyValue "foo" ^Object {:bar "baz"})
+            .log)))))
 
 (deftest slf4j-logging-mdc
   (assert-logs [{"key" "value"}]
