@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+set -e
 
 clj -X:build clean
 clj -X:build jar
 version=$(clj -X:build get-version)
 
-export CLOJARS_USERNAME="op://Personal/clojars.org/username"
-export CLOJARS_PASSWORD="op://Personal/clojars.org/token"
+export CLOJARS_USERNAME="op://ifyyzxjhwnttc3oqug3vdigdwe/clojars.org/username"
+export CLOJARS_PASSWORD="op://ifyyzxjhwnttc3oqug3vdigdwe/clojars.org/token"
 
 op run -- mvn deploy:deploy-file \
   -DgroupId="org.clojars.rutledgepaulv" \
