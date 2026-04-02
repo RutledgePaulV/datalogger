@@ -43,7 +43,13 @@
                                     "message" "Inner"
                                     "trace" trace-pattern
                                     "cause" nil?}}]
-          (log :error (RuntimeException. "Outer" (ex-info "Inner" {}))))))))
+          (log :error (RuntimeException. "Outer" (ex-info "Inner" {}))))))
+    (testing "stacktrace as string"
+      (with-config {:exceptions {:format-trace :string}}
+        (assert-logs [{"exception" {"class" "java.lang.Exception"
+                                    "message" "fail"
+                                    "trace" string?}}]
+          (log :error (Exception. "fail")))))))
 
 (deftest clojure-logging-with-context
   (assert-logs [{"outside" 1 "inside" 2}]

@@ -28,18 +28,20 @@
     (resolve-symbol mask "Couldn't resolve masking function.")))
 
 (defn normalize-config [config]
-  (let [conf       (utils/deep-merge DEFAULTS config)
-        log-filter (utils/compile-filter (get-in conf [:levels]))
-        key-test   (utils/compile-key-pred (get-in conf [:masking :keys]))
-        value-test (utils/compile-val-pred (get-in conf [:masking :values]))
-        elide-test (utils/compile-key-pred (get-in conf [:elide]))
-        mask       (mask-from-config conf)]
+  (let [conf         (utils/deep-merge DEFAULTS config)
+        log-filter   (utils/compile-filter (get-in conf [:levels]))
+        key-test     (utils/compile-key-pred (get-in conf [:masking :keys]))
+        value-test   (utils/compile-val-pred (get-in conf [:masking :values]))
+        elide-test   (utils/compile-key-pred (get-in conf [:elide]))
+        mask         (mask-from-config conf)
+        format-trace (get-in conf [:exceptions :format-trace])]
     (with-meta conf
-               {:filter    log-filter
-                :masker    mask
-                :elide?    elide-test
-                :mask-key? key-test
-                :mask-val? value-test})))
+               {:filter       log-filter
+                :masker       mask
+                :elide?       elide-test
+                :mask-key?    key-test
+                :mask-val?    value-test
+                :format-trace format-trace})))
 
 (defonce ^:dynamic *config* (atom (normalize-config {})))
 
