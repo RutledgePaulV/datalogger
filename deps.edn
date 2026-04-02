@@ -1,10 +1,10 @@
 {:deps
- {org.clojure/data.json      {:mvn/version "2.5.1"}
-  org.slf4j/slf4j-api        {:mvn/version "2.0.16"}
-  org.slf4j/log4j-over-slf4j {:mvn/version "2.0.16"}
-  org.slf4j/jcl-over-slf4j   {:mvn/version "2.0.16"}
-  org.slf4j/osgi-over-slf4j  {:mvn/version "2.0.16"}
-  org.slf4j/jul-to-slf4j     {:mvn/version "2.0.16"}}
+ {org.clojure/data.json      {:mvn/version "2.5.2"}
+  org.slf4j/slf4j-api        {:mvn/version "2.0.17"}
+  org.slf4j/log4j-over-slf4j {:mvn/version "2.0.17"}
+  org.slf4j/jcl-over-slf4j   {:mvn/version "2.0.17"}
+  org.slf4j/osgi-over-slf4j  {:mvn/version "2.0.17"}
+  org.slf4j/jul-to-slf4j     {:mvn/version "2.0.17"}}
 
  :paths
  ["src" "resources"]
