@@ -5,6 +5,7 @@ clj -X:build clean
 clj -X:build jar
 version=$(clj -X:build get-version)
 
+export OP_ACCOUNT="my.1password.com"
 export CLOJARS_USERNAME="op://ifyyzxjhwnttc3oqug3vdigdwe/clojars.org/username"
 export CLOJARS_PASSWORD="op://ifyyzxjhwnttc3oqug3vdigdwe/clojars.org/token"
 
