@@ -17,12 +17,13 @@
      Also handle any pruning of sensitive values (defined by options).
      Also produce a deterministic ordering of any unordered collections."))
 
-(defn- make-trace [^Throwable e {:as _options :keys [format-trace]}]
+(defn- make-trace [^Throwable e {:as options :keys [format-trace]}]
   (case format-trace
     :string (with-open [sw (StringWriter.)
                         w (PrintWriter. sw)]
               (.printStackTrace e w)
               (.toString sw))
+    :json-string (json/write-str (as-data (vec (.getStackTrace e)) options))
     (vec (.getStackTrace e))))
 
 (extend-protocol LoggableData
