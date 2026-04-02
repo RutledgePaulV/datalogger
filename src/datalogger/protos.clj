@@ -3,8 +3,9 @@
             [datalogger.impl.utils :as utils]
             [clojure.stacktrace :as stack])
   (:import (clojure.lang MapEntry Keyword Delay Atom ISeq Volatile Namespace Symbol)
-           (java.util Map Set List)
+           (java.io PrintWriter StringWriter)
            (java.time Instant)
+           (java.util Map Set List)
            (java.util.function Supplier)))
 
 (set! *warn-on-reflection* true)
@@ -15,6 +16,14 @@
     "Convert x into serializable (as json) data.
      Also handle any pruning of sensitive values (defined by options).
      Also produce a deterministic ordering of any unordered collections."))
+
+(defn- make-trace [^Throwable e {:as _options :keys [format-trace]}]
+  (case format-trace
+    :string (with-open [sw (StringWriter.)
+                        w (PrintWriter. sw)]
+              (.printStackTrace e w)
+              (.toString sw))
+    (vec (.getStackTrace e))))
 
 (extend-protocol LoggableData
   Object
@@ -50,11 +59,11 @@
         (let [root ^Throwable (stack/root-cause x)]
           (cond-> {:class (.getName (class root))
                    :message (ex-message root)
-                   :trace (vec (.getStackTrace root))}
+                   :trace (make-trace root options)}
             (ex-data root) (assoc :data (ex-data root))))
         (cond-> {:class (.getName (class x))
                  :message (ex-message x)
-                 :trace (vec (.getStackTrace x))}
+                 :trace (make-trace x options)}
           (ex-data x) (assoc :data (ex-data x))
           (.getCause x) (assoc :cause (.getCause x))))
       options))
